@@ -5,4 +5,3 @@ A travel helper app that gives users information about flights, airports, and tr
 where u travellin to today?
 
 I am travelling to IBITHA
-
