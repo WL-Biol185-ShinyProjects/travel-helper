@@ -32,13 +32,10 @@ function(input, output) {
 
 #on time arrival by airports
 function(input, output) {
-  output$Requirement <- renderText({
-    result <- passport_info %>% 
-      filter(Passport == input$Passport, Destination == input$Destination) 
-    if(nrow(result) > 0) {
-      result$Requirement[1]
-    } else {
-      "No information available"
+  output$"%" <- renderPlot({
+    result <- Arrival_info_2025 %>% 
+      filter("2025" == input$"2025")  %>% 
+    ggplot(aes("%")) + 
+      geom_bar()
     }
-  })
-}
+)}

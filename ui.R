@@ -18,5 +18,22 @@ fluidPage(
       h4("Requirement"), 
       verbatimTextOutput("Requirement")
     )
-  )
-)
+  ),
+  
+  
+  
+  
+  
+  sidebarLayout(
+    sidebarPanel(
+                     
+      ),
+    mainPanel(
+      plotOutput("%")
+      )
+    ),
+    
+    )
+
+
+
