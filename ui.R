@@ -1,6 +1,8 @@
 library(shiny)
 library(shinydashboard)
 
+dashboardPage(
+dashboardHeader("Travel Helper"),
 # Sidebar content
 dashboardSidebar(
   sidebarMenu(
@@ -12,7 +14,7 @@ dashboardSidebar(
     menuItem("Pricing",            tabName = "pricing"),
     menuItem("Travel Suggestions", tabName = "travel_suggestions")
   )
-)
+),
 
 # Body content
 dashboardBody(
@@ -73,5 +75,6 @@ dashboardBody(
               box()
             )
     )
+)
 )
 )
