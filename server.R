@@ -2,8 +2,9 @@ library(shiny)
 library(ggplot2)
 library(tidyverse)
 
-passport_info <- read.csv("passport-index-tidy.csv")
+function(input, output, session) 
 
+<<<<<<< HEAD
 
 Requirement_new <- c("90 Days Visa Free","30 Days Visa Free")
 names(Requirement_new) <- c("90", "30")
@@ -28,5 +29,12 @@ function(input, output) {
     }) 
 
 
+=======
+
+function(input, output) {
+  
+>>>>>>> 4b415f24cccaba10e57946b7d3b93711b88d99ab
 }
   
+passport_info <- read.csv("passport-index-tidy.csv") 
+
