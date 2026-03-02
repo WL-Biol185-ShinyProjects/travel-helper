@@ -73,6 +73,5 @@ dashboardBody(
               box()
             )
     )
-    
-  )
+)
 )
