@@ -2,7 +2,7 @@ library(shiny)
 library(shinydashboard)
 
 dashboardPage(
-dashboardHeader("Travel Helper"),
+dashboardHeader(title = "Travel Helper"),
 # Sidebar content
 dashboardSidebar(
   sidebarMenu(
