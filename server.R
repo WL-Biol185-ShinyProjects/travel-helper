@@ -4,6 +4,7 @@ library(tidyverse)
 
 passport_info <- read.csv("passport-index-tidy.csv") 
 currencyVcountry <- read.csv("currencyVcountry.csv")
+vaccinationVcountry <- read.csv("vaccinationVcountry.csv")
   
 function(input, output) {
   
@@ -20,10 +21,13 @@ function(input, output) {
   })
   
   #Renderblock currency
-  
   output$Currency <- renderText({
     currencyVcountry [currencyVcountry$Country == input$Country, "Currency"]
+     })
     
+  #Renderblock vaccinations
+  output$`Vaccination Required` <- renderText({
+    vaccinationVcountry [vaccinationVcountry$Country == input$Country, "`Vaccination Required`"]
   })
-    
+  
   }

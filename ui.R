@@ -56,7 +56,17 @@ dashboardPage(
                   ),
                   h4("Currency"), 
                   verbatimTextOutput("Currency")
-                )
+                ),
+                
+                box(
+                  selectizeInput("Country", 
+                                 label = "Destination Country",
+                                 choices = (vaccinationVcountry$Country)
+                  ),
+                  h4("Vaccination Required"), 
+                  verbatimTextOutput("Vaccination Required")
+                ),
+                
               )
       ),
       
