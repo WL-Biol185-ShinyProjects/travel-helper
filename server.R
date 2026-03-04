@@ -2,21 +2,10 @@ library(shiny)
 library(ggplot2)
 library(tidyverse)
 
-<<<<<<< HEAD
-function(input, output) {passport_info <- read.csv("passport-index-tidy.csv") }
-
-
-=======
 passport_info <- read.csv("passport-index-tidy.csv") 
-  
->>>>>>> 3e29dd50e8c56f565ebefb1ba7370ffbc50a5459
-
-  
-<<<<<<< HEAD
+function(input, output) {
 
 
-
-=======
  #Renderblock passport 
    #passport_info$Requirement <- v[passport_info$Requirement]
   output$Requirement <- renderText({
@@ -30,4 +19,5 @@ passport_info <- read.csv("passport-index-tidy.csv")
   })
   
 }
->>>>>>> 3e29dd50e8c56f565ebefb1ba7370ffbc50a5459
+
+
