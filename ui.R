@@ -1,6 +1,6 @@
 library(shiny)
 library(shinydashboard)
-
+passport_info <- read.csv("passport-index-tidy.csv") 
 dashboardPage(
   dashboardHeader(title = "Travel Helper"),
   # Sidebar content
