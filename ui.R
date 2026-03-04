@@ -49,7 +49,14 @@ dashboardPage(
                   
                   ),
                 
-                box()
+                box(
+                  selectizeInput("Country", 
+                                 label = "Destination Country",
+                                 choices = (currencyVcountry$Country)
+                  ),
+                  h4("Currency"), 
+                  verbatimTextOutput("Currency")
+                )
               )
       ),
       

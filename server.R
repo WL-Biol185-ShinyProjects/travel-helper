@@ -3,10 +3,7 @@ library(ggplot2)
 library(tidyverse)
 
 passport_info <- read.csv("passport-index-tidy.csv") 
-
-function(input, output) {
-  
-}
+currencyVcountry <- read.csv("currencyVcountry.csv")
   
 function(input, output) {
   
@@ -22,6 +19,11 @@ function(input, output) {
     }
   })
   
+  #Renderblock currency
   
-  
-}
+  output$Currency <- renderText({
+    currencyVcountry [currencyVcountry$Country == input$Country, "Currency"]
+    
+  })
+    
+  }
