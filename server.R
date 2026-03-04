@@ -30,7 +30,7 @@ function(input, output) {
     currencyVcountry [currencyVcountry$Country == input$Country, "Currency"]
      })
     
-  #Renderblock vaccinations
+  #Renderblock vaccinations NEED TO FIX NEXT CLASS!!!
   output$`Vaccination Required` <- renderText({
     vaccinationVcountry [vaccinationVcountry$Country == input$Country, "`Vaccination Required`"]
   })
