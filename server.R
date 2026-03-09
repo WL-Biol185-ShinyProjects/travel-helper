@@ -1,8 +1,12 @@
 library(shiny)
 library(ggplot2)
 library(tidyverse)
-library(plotly)
 library(readxl)
+library(plotly)
+
+
+ #Renderblock passport 
+
 
 passport_info <- read.csv("passport-index-tidy.csv") 
 currencyVcountry <- read.csv("currencyVcountry.csv")
@@ -16,6 +20,7 @@ arrival_2025 <- read_excel("arrival information 2025.xlsx")
 function(input, output) {
   
  #Render block passport 
+
    #passport_info$Requirement <- v[passport_info$Requirement]
   output$Requirement <- renderText({
     result <- passport_info %>% 
@@ -116,4 +121,11 @@ function(input, output) {
       theme(legend.position = "none")
   })
 }
+server <- function(input, output) {
+  output$sites_table <- renderTable({
+    heritage_data[heritage_data$country == input$country, "site", drop = FALSE]
+  })
+}
+
+
 
