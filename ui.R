@@ -88,8 +88,8 @@ dashboardPage(
                                  label = "Destination Country",
                                  choices = (vaccinationVcountry$Country)
                   ),
-                  h4("Vaccination Required"), 
-                  verbatimTextOutput("Vaccination Required")
+                  h4("Vaccination required"), 
+                  verbatimTextOutput("Vaccination_required")
                 ),
                 
               )
