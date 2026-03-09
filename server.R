@@ -11,9 +11,7 @@ library(plotly)
 passport_info <- read.csv("passport-index-tidy.csv") 
 currencyVcountry <- read.csv("currencyVcountry.csv")
 vaccinationVcountry <- read.csv("vaccinationVcountry.csv")
-  names(vaccinationVcountry)[names(vaccinationVcountry) == "Vaccination Required"] <- "Vaccination_required"
-  names(vaccinationVcountry)[names(vaccinationVcountry) == "Country"] <- "Country_vaccination"
-
+  colnames(vaccinationVcountry) <- c("Country_vaccination", "Vaccination_required")
 
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
   colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
