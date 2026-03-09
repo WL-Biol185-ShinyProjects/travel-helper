@@ -57,11 +57,7 @@ function(input, output) {
       ) +
       theme_minimal()
   })
-}
-server <- function(input, output) {
-  output$sites_table <- renderTable({
-    heritage_data[heritage_data$country == input$country, "site", drop = FALSE]
-  })
+
 }
 
 
