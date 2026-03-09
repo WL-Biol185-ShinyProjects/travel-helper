@@ -15,7 +15,8 @@ vaccinationVcountry <- read.csv("vaccinationVcountry.csv")
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
   colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
   arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
-  
+ 
+UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
 
 function(input, output) {
   
