@@ -2,7 +2,7 @@ library(shiny)
 library(ggplot2)
 library(tidyverse)
 library(readxl)
-UNESECO <- read_excel(UNESCO_World_Heritage_Sites.xlsx)
+UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
 
 passport_info <- read.csv("passport-index-tidy.csv") 
 function(input, output) {}
