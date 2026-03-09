@@ -8,7 +8,10 @@ arrival_2025 <- read_excel("arrival information 2025.xlsx")
   colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
   arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
 
+currencyVcountry <- read.csv("currencyVcountry.csv")
+vaccinationVcountry <- read.csv("vaccinationVcountry.csv")
 
+passport_info <- read.csv("passport-index-tidy.csv") 
 
 dashboardPage(
   dashboardHeader(title = "Travel Helper"),
@@ -57,7 +60,24 @@ dashboardPage(
                   
                   ),
                 
-                box()
+                box(
+                  selectizeInput("Country", 
+                                 label = "Destination Country",
+                                 choices = (currencyVcountry$Country)
+                  ),
+                  h4("Currency"), 
+                  verbatimTextOutput("Currency")
+                ),
+                
+                box(
+                  selectizeInput("Country", 
+                                 label = "Destination Country",
+                                 choices = (vaccinationVcountry$Country)
+                  ),
+                  h4("Vaccination Required"), 
+                  verbatimTextOutput("Vaccination Required")
+                ),
+                
               )
       ),
       
@@ -91,8 +111,7 @@ dashboardPage(
       # Pricing tab
       tabItem(tabName = "pricing",
               fluidRow(
-                box(),
-                box()
+                box
               )
       ),
       
