@@ -4,8 +4,6 @@ library(tidyverse)
 library(readxl)
 library(plotly)
 
-function(input, output) {}
-
 
  #Renderblock passport 
 
