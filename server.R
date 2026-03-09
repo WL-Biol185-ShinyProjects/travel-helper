@@ -1,7 +1,7 @@
 library(shiny)
 library(ggplot2)
 library(tidyverse)
-library(plotly)
+library(readxl)
 
 passport_info <- read.csv("passport-index-tidy.csv") 
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
