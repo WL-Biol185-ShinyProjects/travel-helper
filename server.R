@@ -3,12 +3,12 @@ library(ggplot2)
 library(tidyverse)
 library(readxl)
 
-
 # Data loading
 UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
 passport_info <- read.csv("passport-index-tidy.csv") 
 currencyVcountry <- read.csv("currencyVcountry.csv")
 vaccinationVcountry <- read.csv("vaccinationVcountry.csv")
+colnames(vaccinationVcountry) <- c("Country", "Vaccination_required")
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
 colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
 arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
@@ -33,8 +33,8 @@ function(input, output) {
   })
   
   # Vaccinations
-  output$VaccinationRequired <- renderText({
-    vaccinationVcountry[vaccinationVcountry$Country == input$VaxCountry, "Vaccination Required"]
+  output$Vaccination_required <- renderText({
+    vaccinationVcountry[vaccinationVcountry$Country == input$Country, "Vaccination_required"]
   })
   
   # Airports chart

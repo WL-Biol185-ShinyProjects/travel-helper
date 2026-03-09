@@ -55,19 +55,19 @@ dashboardPage(
                   width = 6, status = "info", solidHeader = TRUE,
                   title = "💡 Travel Tips",
                   p("Always check your passport expiration date before booking — many countries require 
-    at least 6 months validity beyond your travel dates!"),
+                    at least 6 months validity beyond your travel dates!"),
                   br(),
                   h4("📋 Enroll in STEP!"),
                   p("The Smart Traveler Enrollment Program (STEP) is a free service from the U.S. Department 
-    of State that allows U.S. citizens traveling abroad to register their trip with the nearest 
-    U.S. Embassy or Consulate."),
+                    of State that allows U.S. citizens traveling abroad to register their trip with the nearest 
+                    U.S. Embassy or Consulate."),
                   p("Benefits of enrolling:"),
                   tags$ul(
                     tags$li("Receive safety alerts and updates for your destination"),
                     tags$li("Make it easier for the Embassy to contact you in an emergency"),
                     tags$li("Help family and friends reach you in a crisis")
                   ),
-                  tags$a(href = "https://step.state.gov", target = "_blank", 
+                  tags$a(href = "https://step.state.gov", target = "_blank",
                          "👉 Enroll in STEP at step.state.gov")
                 ),
                 box(
@@ -147,7 +147,6 @@ dashboardPage(
       # Pricing tab
       tabItem(tabName = "pricing",
               fluidRow(
-                box(),
                 box()
               )
       ),
