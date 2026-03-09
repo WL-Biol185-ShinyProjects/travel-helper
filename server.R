@@ -2,7 +2,7 @@ library(shiny)
 library(ggplot2)
 library(tidyverse)
 library(readxl)
-library(plotly)
+
 
 # Data loading
 UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")

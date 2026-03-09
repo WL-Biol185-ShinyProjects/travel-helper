@@ -32,8 +32,56 @@ dashboardPage(
       # Welcome tab
       tabItem(tabName = "welcome",
               fluidRow(
-                box(),
-                box()
+                box(
+                  width = 12,
+                  status = "primary", solidHeader = TRUE,
+                  title = "Welcome to Travel Helper! ✈️",
+                  h3("Welcome to Travel Helper!"),
+                  p("Navigate through the sidebar tabs so we can help you plan for your trip!"),
+                  br(),
+                  p("Here's what you can find in each tab:"),
+                  tags$ul(
+                    tags$li("🌍 International Travel — Check visa requirements, currency, and vaccination info"),
+                    tags$li("🌤️ Weather — Look up weather at your destination"),
+                    tags$li("✈️ Airports — Find the best airports ranked by on-time arrival"),
+                    tags$li("💺 Airlines — Explore airline options"),
+                    tags$li("💰 Pricing — Compare travel pricing"),
+                    tags$li("🗺️ Travel Suggestions — Discover UNESCO World Heritage Sites to visit")
+                  )
+                )
+              ),
+              fluidRow(
+                box(
+                  width = 6, status = "info", solidHeader = TRUE,
+                  title = "💡 Travel Tips",
+                  p("Always check your passport expiration date before booking — many countries require 
+    at least 6 months validity beyond your travel dates!"),
+                  br(),
+                  h4("📋 Enroll in STEP!"),
+                  p("The Smart Traveler Enrollment Program (STEP) is a free service from the U.S. Department 
+    of State that allows U.S. citizens traveling abroad to register their trip with the nearest 
+    U.S. Embassy or Consulate."),
+                  p("Benefits of enrolling:"),
+                  tags$ul(
+                    tags$li("Receive safety alerts and updates for your destination"),
+                    tags$li("Make it easier for the Embassy to contact you in an emergency"),
+                    tags$li("Help family and friends reach you in a crisis")
+                  ),
+                  tags$a(href = "https://step.state.gov", target = "_blank", 
+                         "👉 Enroll in STEP at step.state.gov")
+                ),
+                box(
+                  width = 6, status = "warning", solidHeader = TRUE,
+                  title = "📋 Trip Planning Checklist",
+                  tags$ul(
+                    tags$li("✅ Check visa requirements"),
+                    tags$li("✅ Verify passport expiration"),
+                    tags$li("✅ Review vaccination requirements"),
+                    tags$li("✅ Research local currency"),
+                    tags$li("✅ Find the best airport"),
+                    tags$li("✅ Discover sites to visit")
+                  )
+                )
               )
       ),
       
@@ -108,11 +156,16 @@ dashboardPage(
       tabItem(tabName = "travel_suggestions",
               fluidRow(
                 box(
+                  title = "Where Are You Going?", status = "primary", solidHeader = TRUE,
                   selectizeInput("UNESCOCountry",
-                                 label = "Destination Country",
+                                 label = "Select Your Destination",
                                  choices = sort(unique(UNESCO$Country)))
-                ),
+                )
+              ),
+              fluidRow(
                 box(
+                  title = "UNESCO World Heritage Sites to Visit", status = "success", solidHeader = TRUE,
+                  width = 6,
                   uiOutput("sites_table")
                 )
               )
