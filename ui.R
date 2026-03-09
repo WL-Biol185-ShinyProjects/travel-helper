@@ -3,7 +3,6 @@ library(shinydashboard)
 library(readxl)
 library(tidyverse)
 
-
 passport_info <- read.csv("passport-index-tidy.csv") 
 currencyVcountry <- read.csv("currencyVcountry.csv")
 vaccinationVcountry <- read.csv("vaccinationVcountry.csv")
@@ -22,7 +21,8 @@ arrival_2025 <- read_excel("arrival information 2025.xlsx")
   colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
   arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
 
-
+currencyVcountry <- read.csv("currencyVcountry.csv")
+vaccinationVcountry <- read.csv("vaccinationVcountry.csv")
 
 passport_info <- read.csv("passport-index-tidy.csv") 
 
@@ -124,7 +124,6 @@ dashboardPage(
       # Pricing tab
       tabItem(tabName = "pricing",
               fluidRow(
-                box(),
                 box()
               )
       ),
