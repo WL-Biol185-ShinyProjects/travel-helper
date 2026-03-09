@@ -1,50 +1,31 @@
 library(shiny)
 library(shinydashboard)
-passport_info <- read.csv("passport-index-tidy.csv")
-library(readxl)
-UNESECO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
 library(readxl)
 library(plotly)
 
-
-passport_info <- read.csv("passport-index-tidy.csv") 
+passport_info <- read.csv("passport-index-tidy.csv")
 currencyVcountry <- read.csv("currencyVcountry.csv")
 vaccinationVcountry <- read.csv("vaccinationVcountry.csv")
-
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
 colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
 arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
-
-
 UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
-
-
-
-passport_info <- read.csv("passport-index-tidy.csv") 
-arrival_2025 <- read_excel("arrival information 2025.xlsx")
-  colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
-  arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
-
-
-
-passport_info <- read.csv("passport-index-tidy.csv") 
 
 dashboardPage(
   dashboardHeader(title = "Travel Helper"),
-  # Sidebar content
+  
   dashboardSidebar(
     sidebarMenu(
-      menuItem("Welcome",            tabName = "welcome"),
+      menuItem("Welcome",              tabName = "welcome"),
       menuItem("International Travel", tabName = "international_travel"),
-      menuItem("Weather",            tabName = "weather"),
-      menuItem("Airports",           tabName = "airports"),
-      menuItem("Airlines",           tabName = "airlines"),
-      menuItem("Pricing",            tabName = "pricing"),
-      menuItem("Travel Suggestions", tabName = "travel_suggestions")
+      menuItem("Weather",              tabName = "weather"),
+      menuItem("Airports",             tabName = "airports"),
+      menuItem("Airlines",             tabName = "airlines"),
+      menuItem("Pricing",              tabName = "pricing"),
+      menuItem("Travel Suggestions",   tabName = "travel_suggestions")
     )
   ),
-
-  # Body content
+  
   dashboardBody(
     tabItems(
       
@@ -61,39 +42,29 @@ dashboardPage(
               fluidRow(
                 box(
                   title = "What Travel Requirements do you Need?", status = "primary", solidHeader = TRUE,
-                  selectizeInput("Passport", 
+                  selectizeInput("Passport",
                                  label = "Your Passport",
-                                 choices = unique(passport_info$Passport)
-                                 
-                                ),
-                  selectizeInput("Destination", 
+                                 choices = unique(passport_info$Passport)),
+                  selectizeInput("Destination",
                                  label = "Your Destination",
-                                 choices = unique(passport_info$Destination)
-                                ),
-              
-                  h4("Requirement"), 
+                                 choices = unique(passport_info$Destination)),
+                  h4("Requirement"),
                   verbatimTextOutput("Requirement")
-                  
-                  ),
-                
+                ),
                 box(
-                  selectizeInput("Country", 
+                  selectizeInput("Country",
                                  label = "Destination Country",
-                                 choices = (currencyVcountry$Country)
-                  ),
-                  h4("Currency"), 
+                                 choices = currencyVcountry$Country),
+                  h4("Currency"),
                   verbatimTextOutput("Currency")
                 ),
-                
                 box(
-                  selectizeInput("Country", 
+                  selectizeInput("Country",
                                  label = "Destination Country",
-                                 choices = (vaccinationVcountry$Country)
-                  ),
-                  h4("Vaccination Required"), 
+                                 choices = vaccinationVcountry$Country),
+                  h4("Vaccination Required"),
                   verbatimTextOutput("Vaccination Required")
-                ),
-                
+                )
               )
       ),
       
@@ -111,7 +82,8 @@ dashboardPage(
                 box(
                   title = "What is the Best Airport to Fly into?", status = "primary", solidHeader = TRUE,
                   width = 8,
-                  plotOutput("percentage_on_time", height = 400)),
+                  plotOutput("percentage_on_time", height = 400)
+                ),
                 box()
               )
       ),
@@ -135,19 +107,17 @@ dashboardPage(
       # Travel Suggestions tab
       tabItem(tabName = "travel_suggestions",
               fluidRow(
-
-                box(selectizeInput("Destination", 
-                                   label = "Destination Country",
-                                   choices = unique(UNESCO$Country)),
-                    mainPanel(
-                      tableOutput("sites_table"),
-                    )
+                box(
+                  selectizeInput("UNESCOCountry",
+                                 label = "Destination Country",
+                                 choices = sort(unique(UNESCO$Country)))
+                ),
+                box(
+                  uiOutput("sites_table")
                 )
-              ),
-                box()
               )
+      )
       
-                box( ),
+    )
   )
-  ),
 )
