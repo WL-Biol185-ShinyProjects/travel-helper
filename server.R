@@ -38,7 +38,7 @@ function(input, output) {
     
   #Renderblock vaccinations NEED TO FIX NEXT CLASS!!!
   output$Vaccination_required <- renderText({
-    vaccinationVcountry [vaccinationVcountry$Country_vaccination == input$Country_vaccination, "Vaccination_required"]
+    vaccinationVcountry[vaccinationVcountry$Country_vaccination == input$Country_vaccination, "Vaccination_required"]
   })
   
 

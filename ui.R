@@ -85,7 +85,7 @@ dashboardPage(
                 box(
                   selectizeInput("Country_vaccination", 
                                  label = "Country of destination",
-                                 choices = (vaccinationVcountry$Country_vaccination)
+                                 choices = (vaccinationVcountry$Country)
                   ),
                   h4("Vaccination required"), 
                   verbatimTextOutput("Vaccination_required")
