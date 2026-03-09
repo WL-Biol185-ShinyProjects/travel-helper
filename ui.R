@@ -1,7 +1,7 @@
 library(shiny)
 library(shinydashboard)
 library(readxl)
-library(plotly)
+library(tidyverse)
 
 
 passport_info <- read.csv("passport-index-tidy.csv") 
@@ -83,9 +83,9 @@ dashboardPage(
                 ),
                 
                 box(
-                  selectizeInput("Country", 
-                                 label = "Destination Country",
-                                 choices = (vaccinationVcountry$Country)
+                  selectizeInput("Country_vaccination", 
+                                 label = "Country of destination",
+                                 choices = (vaccinationVcountry$Country_vaccination)
                   ),
                   h4("Vaccination required"), 
                   verbatimTextOutput("Vaccination_required")

@@ -2,7 +2,6 @@ library(shiny)
 library(ggplot2)
 library(tidyverse)
 library(readxl)
-library(plotly)
 
 
  #Renderblock passport 
@@ -39,7 +38,7 @@ function(input, output) {
     
   #Renderblock vaccinations NEED TO FIX NEXT CLASS!!!
   output$Vaccination_required <- renderText({
-    vaccinationVcountry [vaccinationVcountry$Country == input$Country, "Vaccination_required"]
+    vaccinationVcountry [vaccinationVcountry$Country_vaccination == input$Country_vaccination, "Vaccination_required"]
   })
   
 
