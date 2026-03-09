@@ -124,7 +124,7 @@ dashboardPage(
       # Pricing tab
       tabItem(tabName = "pricing",
               fluidRow(
-                box
+                box()
               )
       ),
       
