@@ -11,6 +11,9 @@ library(plotly)
 passport_info <- read.csv("passport-index-tidy.csv") 
 currencyVcountry <- read.csv("currencyVcountry.csv")
 vaccinationVcountry <- read.csv("vaccinationVcountry.csv")
+  names(vaccinationVcountry)[names(vaccinationVcountry) == "Vaccination Required"] <- "Vaccination_required"
+  names(vaccinationVcountry)[names(vaccinationVcountry) == "Country"] <- "Country_vaccination"
+
 
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
   colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
@@ -37,8 +40,8 @@ function(input, output) {
      })
     
   #Renderblock vaccinations NEED TO FIX NEXT CLASS!!!
-  output$`Vaccination Required` <- renderText({
-    vaccinationVcountry [vaccinationVcountry$Country == input$Country, "`Vaccination Required`"]
+  output$Vaccination_required <- renderText({
+    vaccinationVcountry [vaccinationVcountry$Country == input$Country, "Vaccination_required"]
   })
   
 
