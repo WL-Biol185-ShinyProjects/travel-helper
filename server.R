@@ -2,15 +2,13 @@ library(shiny)
 library(ggplot2)
 library(tidyverse)
 library(readxl)
-UNESECO <- read_excel(UNESCO_World_Heritage_Sites.xlsx)
+library(plotly)
 
-passport_info <- read.csv("passport-index-tidy.csv") 
 function(input, output) {}
 
 
  #Renderblock passport 
-library(plotly)
-library(readxl)
+
 
 passport_info <- read.csv("passport-index-tidy.csv") 
 currencyVcountry <- read.csv("currencyVcountry.csv")

@@ -1,12 +1,21 @@
 library(shiny)
 library(shinydashboard)
-<<<<<<< HEAD
-passport_info <- read.csv("passport-index-tidy.csv")
 library(readxl)
-UNESECO <- read_excel(UNESCO_World_Heritage_Sites.xlsx)
-=======
 library(plotly)
-library(readxl)
+
+
+passport_info <- read.csv("passport-index-tidy.csv") 
+currencyVcountry <- read.csv("currencyVcountry.csv")
+vaccinationVcountry <- read.csv("vaccinationVcountry.csv")
+
+arrival_2025 <- read_excel("arrival information 2025.xlsx")
+colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
+arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
+
+
+UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
+
+
 
 passport_info <- read.csv("passport-index-tidy.csv") 
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
@@ -17,7 +26,6 @@ arrival_2025 <- read_excel("arrival information 2025.xlsx")
 
 passport_info <- read.csv("passport-index-tidy.csv") 
 
->>>>>>> 84acbda62b28cd4a1f2742da7d9720df5e79e7f5
 dashboardPage(
   dashboardHeader(title = "Travel Helper"),
   # Sidebar content
@@ -124,15 +132,7 @@ dashboardPage(
       # Travel Suggestions tab
       tabItem(tabName = "travel_suggestions",
               fluidRow(
-                box(selectizeInput("Destination", 
-                                   label = "Destination Country",
-                                   choices = unique(UNESECO$Country)),
-                    mainPanel(
-                      tableOutput("sites_table"),
-                   
-                box()
-              )
-      )
+                box( ),
   )
   )
 )
