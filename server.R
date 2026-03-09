@@ -4,7 +4,7 @@ library(tidyverse)
 library(readxl)
 library(plotly)
 
-
+print("hello")
  #Renderblock passport 
 
 passport_info <- read.csv("passport-index-tidy.csv") 
