@@ -1,6 +1,7 @@
 library(shiny)
 library(shinydashboard)
 library(plotly)
+library(readxl)
 
 passport_info <- read.csv("passport-index-tidy.csv") 
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
