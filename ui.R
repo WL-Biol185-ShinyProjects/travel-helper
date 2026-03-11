@@ -1,7 +1,9 @@
 library(shiny)
 library(shinydashboard)
 library(readxl)
+library(dplyr)
 
+# Data loading
 passport_info <- read.csv("passport-index-tidy.csv")
 currencyVcountry <- read.csv("currencyVcountry.csv")
 vaccinationVcountry <- read.csv("vaccinationVcountry.csv")
@@ -9,7 +11,81 @@ arrival_2025 <- read_excel("arrival information 2025.xlsx")
 colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
 arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
 UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
+airfare_data <- read.csv("Consumer_Airfare_Report__Table_1_-_Top_1,000_Contiguous_State_City-Pair_Markets_20260309.csv") %>%
+  mutate(
+    fare_low = as.numeric(gsub("[$,]", "", fare_low)),
+    fare_lg  = as.numeric(gsub("[$,]", "", fare_lg)),
+    fare     = as.numeric(gsub("[$,]", "", fare)),
+    city1    = trimws(city1),
+    city2    = trimws(city2)
+  )
+carrier_names <- c(
+  "AA" = "American Airlines",
+  "AS" = "Alaska Airlines",
+  "B6" = "JetBlue Airways",
+  "DL" = "Delta Air Lines",
+  "F9" = "Frontier Airlines",
+  "G4" = "Allegiant Air",
+  "HA" = "Hawaiian Airlines",
+  "NK" = "Spirit Airlines",
+  "OO" = "SkyWest Airlines",
+  "UA" = "United Airlines",
+  "WN" = "Southwest Airlines",
+  "YX" = "Republic Airways",
+  "YV" = "Mesa Airlines",
+  "QX" = "Horizon Air",
+  "SY" = "Sun Country Airlines",
+  "EV" = "ExpressJet",
+  "CO" = "Continental Airlines",
+  "DH" = "Independence Air",
+  "FL" = "AirTran Airways",
+  "HP" = "America West Airlines",
+  "NW" = "Northwest Airlines",
+  "TW" = "Trans World Airlines",
+  "TZ" = "ATA Airlines",
+  "US" = "US Airways",
+  "VX" = "Virgin America",
+  "3M" = "Silver Airways",
+  "9N" = "Trans States Airlines",
+  "A7" = "Air Midwest",
+  "E9" = "Boston-Maine Airways",
+  "FF" = "Tower Air",
+  "J7" = "Valujet Airlines",
+  "JI" = "Midway Airlines",
+  "KP" = "Kiwi International Air Lines",
+  "KW" = "Carnival Air Lines",
+  "L4" = "Mountain Air Express",
+  "MX" = "Mexicana",
+  "N5" = "Nolinor Aviation",
+  "N7" = "National Airlines",
+  "NJ" = "Vanguard Airlines",
+  "OE" = "Westair Airlines",
+  "P9" = "Pro Air",
+  "PN" = "Pan American Airways",
+  "QQ" = "Reno Air",
+  "RP" = "Chautauqua Airlines",
+  "RU" = "Cape Air",
+  "SM" = "Sunjet International",
+  "SX" = "Skybus Airlines",
+  "T3" = "Eastern Airways",
+  "TB" = "USAir Shuttle",
+  "U5" = "USA 3000 Airlines",
+  "W7" = "Western Pacific Airlines",
+  "W9" = "Aloha Airlines",
+  "WV" = "Air South",
+  "XP" = "Casino Express",
+  "ZA" = "Access Air",
+  "ZW" = "Air Wisconsin"
+)
 
+# Rename in the dataframe
+airfare_data <- airfare_data %>%
+  mutate(
+    carrier_lg  = recode(carrier_lg,  !!!carrier_names),
+    carrier_low = recode(carrier_low, !!!carrier_names)
+  )
+
+#Dashboard page set up
 dashboardPage(
   dashboardHeader(title = "Travel Helper"),
   
@@ -146,10 +222,27 @@ dashboardPage(
       # Pricing tab
       tabItem(tabName = "pricing",
               fluidRow(
-                box()
-              )
-      ),
-      
+                box(width = 4,
+                    title = "Search a Route",
+                    status = "primary",
+                    solidHeader = TRUE,
+                    selectizeInput("origin",
+                                   label = "Departure City",
+                                   choices = sort(unique(airfare_data$city1)),
+                                   options = list(placeholder = "Select departure city...")),
+                    uiOutput("dest_dropdown"),
+                    actionButton("search", "Search",
+                                 class = "btn-primary", width = "100%")
+                ),
+                box(width = 8,
+                    title = "Route Information",
+                    status = "primary",
+                    solidHeader = TRUE,
+                    uiOutput("route_results"))
+                      )
+              ),
+  
+
       # Travel Suggestions tab
       tabItem(tabName = "travel_suggestions",
               fluidRow(
