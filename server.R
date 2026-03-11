@@ -3,6 +3,10 @@ library(ggplot2)
 library(tidyverse)
 library(readxl)
 library(dplyr)
+library(httr)
+library(jsonlite)
+library(leaflet)
+
 
 # Data loading
 UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
@@ -86,6 +90,12 @@ airfare_data <- airfare_data %>%
     carrier_lg  = recode(carrier_lg,  !!!carrier_names),
     carrier_low = recode(carrier_low, !!!carrier_names)
   )
+
+capitals <- read_excel("Capitals.xlsx")
+world_cities <- read_excel("worldcities.xlsx")
+world_cities <- world_cities[!is.na(world_cities$population) & 
+                               world_cities$population > 500000, ]
+
 
 # Server
 function(input, output) {
@@ -191,5 +201,128 @@ function(input, output) {
       br(),
       p(paste("Distance:", df$nsmiles, "miles  |  passengers:", df$passengers, " |  Data from: Q", df$quarter, df$Year))
     )
+  
+  # Weather map - initial render
+  output$weather_map <- renderLeaflet({
+    leaflet(world_cities) %>%
+      addProviderTiles(providers$CartoDB.Positron) %>%
+      setView(lng = 0, lat = 20, zoom = 2) %>%
+      addMarkers(
+        lng = ~lng,
+        lat = ~lat,
+        layerId = ~id,
+        label = ~paste0(city, ", ", country),
+        clusterOptions = markerClusterOptions()
+      )
+  })
+  
+  # Render city dropdown based on selected country
+  output$city_selector <- renderUI({
+    req(input$weather_country)
+    cities <- world_cities[world_cities$country == input$weather_country, ]
+    selectizeInput("weather_city", "Select City",
+                   choices = c("", sort(unique(cities$city))),
+                   options = list(placeholder = "Type or select a city..."))
+  })
+  
+  # Fly to country when dropdown selected
+  observeEvent(input$weather_country, {
+    req(input$weather_country)
+    
+    country_cities <- world_cities[world_cities$country == input$weather_country, ]
+    
+    if (nrow(country_cities) > 0) {
+      avg_lat <- mean(country_cities$lat, na.rm = TRUE)
+      avg_lng <- mean(country_cities$lng, na.rm = TRUE)
+      
+      leafletProxy("weather_map") %>%
+        setView(lng = avg_lng, lat = avg_lat, zoom = 5)
+    }
+  })
+  
+  # Fly to city when selected
+  observeEvent(input$weather_city, {
+    req(input$weather_city)
+    
+    row <- world_cities[world_cities$city == input$weather_city & 
+                          world_cities$country == input$weather_country, ]
+    
+    if (nrow(row) > 0) {
+      leafletProxy("weather_map") %>%
+        setView(lng = row$lng[1], lat = row$lat[1], zoom = 8)
+    }
+  })
+  
+  # When a city marker is clicked, fetch and display weather
+  observeEvent(input$weather_map_marker_click, {
+    click <- input$weather_map_marker_click
+    
+    row <- world_cities[world_cities$id == click$id, ]
+    lat <- row$lat
+    lon <- row$lng
+    city <- row$city
+    country <- row$country
+    
+    url <- paste0(
+      "https://api.open-meteo.com/v1/forecast?",
+      "latitude=", lat,
+      "&longitude=", lon,
+      "&current_weather=true",
+      "&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode",
+      "&temperature_unit=fahrenheit",
+      "&precipitation_unit=inch",
+      "&timezone=auto",
+      "&forecast_days=7"
+    )
+    
+    response <- GET(url)
+    data <- fromJSON(content(response, "text", encoding = "UTF-8"))
+    weather <- data$current_weather
+    forecast <- as.data.frame(data$daily)
+    
+    weather_description <- case_when(
+      weather$weathercode == 0  ~ "Clear sky ☀️",
+      weather$weathercode %in% 1:3   ~ "Partly cloudy ⛅",
+      weather$weathercode %in% 45:48 ~ "Foggy 🌫️",
+      weather$weathercode %in% 51:67 ~ "Rainy 🌧️",
+      weather$weathercode %in% 71:77 ~ "Snowy ❄️",
+      weather$weathercode %in% 80:82 ~ "Rain showers 🌦️",
+      weather$weathercode %in% 95:99 ~ "Thunderstorm ⛈️",
+      TRUE ~ "Unknown"
+    )
+    
+    forecast_rows <- paste0(
+      sapply(1:nrow(forecast), function(i) {
+        paste0(
+          "<tr>",
+          "<td style='padding:3px 8px'>", forecast$time[i], "</td>",
+          "<td style='padding:3px 8px'>", forecast$temperature_2m_max[i], "°F / ",
+          forecast$temperature_2m_min[i], "°F</td>",
+          "<td style='padding:3px 8px'>", forecast$precipitation_sum[i], " in</td>",
+          "</tr>"
+        )
+      }),
+      collapse = ""
+    )
+    
+    popup_text <- paste0(
+      "<b style='font-size:14px'>", city, ", ", country, "</b><br><br>",
+      "🌡️ <b>Now:</b> ", weather$temperature, "°F<br>",
+      "💨 <b>Wind:</b> ", weather$windspeed, " km/h<br>",
+      "🌤️ <b>Conditions:</b> ", weather_description, "<br><br>",
+      "<b>7-Day Forecast</b><br>",
+      "<table style='font-size:11px; border-collapse:collapse'>",
+      "<tr style='background:#f0f0f0'>",
+      "<th style='padding:3px 8px'>Date</th>",
+      "<th style='padding:3px 8px'>High / Low</th>",
+      "<th style='padding:3px 8px'>Precip</th>",
+      "</tr>",
+      forecast_rows,
+      "</table>"
+    )
+    
+    leafletProxy("weather_map") %>%
+      addPopups(lng = lon, lat = lat, popup = popup_text)
+  })
   })
 }

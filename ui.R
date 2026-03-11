@@ -2,6 +2,9 @@ library(shiny)
 library(shinydashboard)
 library(readxl)
 library(dplyr)
+library(plotly)
+library(leaflet)
+
 
 # Data loading
 passport_info <- read.csv("passport-index-tidy.csv")
@@ -78,6 +81,9 @@ carrier_names <- c(
   "ZW" = "Air Wisconsin"
 )
 
+world_cities <- read_excel("worldcities.xlsx")
+world_cities <- world_cities[!is.na(world_cities$population) & 
+                               world_cities$population > 500000, ]
 # Rename in the dataframe
 airfare_data <- airfare_data %>%
   mutate(
@@ -108,8 +114,7 @@ dashboardPage(
       tabItem(tabName = "welcome",
               fluidRow(
                 box(
-                  width = 12,
-                  status = "primary", solidHeader = TRUE,
+                  width = 12, status = "primary", solidHeader = TRUE,
                   title = "Welcome to Travel Helper! ✈️",
                   h3("Welcome to Travel Helper!"),
                   p("Navigate through the sidebar tabs so we can help you plan for your trip!"),
@@ -117,7 +122,7 @@ dashboardPage(
                   p("Here's what you can find in each tab:"),
                   tags$ul(
                     tags$li("🌍 International Travel — Check visa requirements, currency, and vaccination info"),
-                    tags$li("🌤️ Weather — Look up weather at your destination"),
+                    tags$li("🌤️ Weather — Click any city on the map for a 7-day forecast"),
                     tags$li("✈️ Airports — Find the best airports ranked by on-time arrival"),
                     tags$li("💺 Airlines — Explore airline options"),
                     tags$li("💰 Pricing — Compare travel pricing"),
@@ -129,12 +134,12 @@ dashboardPage(
                 box(
                   width = 6, status = "info", solidHeader = TRUE,
                   title = "💡 Travel Tips",
-                  p("Always check your passport expiration date before booking — many countries require 
+                  p("Always check your passport expiration date before booking — many countries require
                     at least 6 months validity beyond your travel dates!"),
                   br(),
                   h4("📋 Enroll in STEP!"),
-                  p("The Smart Traveler Enrollment Program (STEP) is a free service from the U.S. Department 
-                    of State that allows U.S. citizens traveling abroad to register their trip with the nearest 
+                  p("The Smart Traveler Enrollment Program (STEP) is a free service from the U.S. Department
+                    of State that allows U.S. citizens traveling abroad to register their trip with the nearest
                     U.S. Embassy or Consulate."),
                   p("Benefits of enrolling:"),
                   tags$ul(
@@ -194,8 +199,29 @@ dashboardPage(
       # Weather tab
       tabItem(tabName = "weather",
               fluidRow(
-                box(),
-                box()
+                box(
+                  width = 12, status = "primary", solidHeader = TRUE,
+                  title = "🌤️ World Weather",
+                  p("Use the dropdowns to jump to a country and city, or browse the map and click any city marker to get the current conditions and 7-day forecast."),
+                  p("🔍 Cities are clustered — zoom in to see individual city markers, then click to get weather.")
+                )
+              ),
+              fluidRow(
+                box(
+                  width = 4, status = "info", solidHeader = TRUE,
+                  title = "Jump to a Location",
+                  selectizeInput("weather_country", "Select Country",
+                                 choices = c("", sort(unique(world_cities$country))),
+                                 options = list(placeholder = "Type or select a country...")),
+                  uiOutput("city_selector")
+                )
+              ),
+              fluidRow(
+                box(
+                  width = 12, status = "success", solidHeader = TRUE,
+                  title = "🗺️ Click a City for Weather",
+                  leafletOutput("weather_map", height = 550)
+                )
               )
       ),
       
