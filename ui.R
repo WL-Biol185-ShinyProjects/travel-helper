@@ -1,10 +1,8 @@
 library(shiny)
 library(shinydashboard)
 library(readxl)
-<<<<<<< HEAD
 library(tidyverse)
-=======
->>>>>>> 3637b45b7f88a14f2000ee5c113ffe21a4474bca
+
 
 passport_info <- read.csv("passport-index-tidy.csv") 
 currencyVcountry <- read.csv("currencyVcountry.csv")
