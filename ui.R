@@ -2,30 +2,40 @@ library(shiny)
 library(shinydashboard)
 library(readxl)
 library(tidyverse)
+library(dplyr)
 
 
 passport_info <- read.csv("passport-index-tidy.csv") 
 currencyVcountry <- read.csv("currencyVcountry.csv")
-vaccinationVcountry <- read.csv("vaccinationVcountry.csv")
-
+vaccinationVcountry <- read.csv("vaccinationVcountry_correct.csv")
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
-colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
-arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
-
-
-UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
-
-
-
-passport_info <- read.csv("passport-index-tidy.csv") 
-arrival_2025 <- read_excel("arrival information 2025.xlsx")
+adapter_data <- read.csv("travel_adapter_converter.csv")
   colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
   arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
+UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
 
-currencyVcountry <- read.csv("currencyVcountry.csv")
-vaccinationVcountry <- read.csv("vaccinationVcountry.csv")
-
-passport_info <- read.csv("passport-index-tidy.csv") 
+v <- c(
+  "90"            = "90 Days Visa Free",
+  "30"            = "30 Days Visa Free",
+  "60"            = "60 Days Visa Free",
+  "360"           = "360 Days Visa Free",
+  "21"            = "21 Days Visa Free",
+  "28"            = "28 Days Visa Free",
+  "19"            = "19 Days Visa Free",
+  "180"           = "180 Days Visa Free",
+  "14"            = "14 Days Visa Free",
+  "42"            = "42 Days Visa Free",
+  "15"            = "15 Days Visa Free",
+  "240"           = "240 Days Visa Free",
+  "120"           = "120 Days Visa Free",
+  "eta"           = "Electronic Travel Authorization",
+  "e-visa"        = "Electronic Visa Needed",
+  "visa required" = "Visa Required",
+  "visa on arrival" = "Visa on Arrival",
+  "visa free"     = "Visa Free",
+  "-1"            = "In-Country, No Visa Needed"
+)
+passport_info$Requirement <- recode(passport_info$Requirement, !!!v)
 
 dashboardPage(
   dashboardHeader(title = "Travel Helper"),
@@ -75,6 +85,7 @@ dashboardPage(
                   ),
                 
                 box(
+                  title = "Currency Info", status = "primary", solidHeader = TRUE,
                   selectizeInput("Country", 
                                  label = "Destination Country",
                                  choices = (currencyVcountry$Country)
@@ -84,25 +95,39 @@ dashboardPage(
                 ),
                 
                 box(
-                  selectizeInput("Country_vaccination", 
+                  title = "Vaccination Nedded", status = "primary", solidHeader = TRUE,
+                  selectizeInput("country_vaccination", 
                                  label = "Country of destination",
-                                 choices = (vaccinationVcountry$Country)
+                                 choices = (vaccinationVcountry$country_vaccination)
                   ),
                   h4("Vaccination required"), 
-                  verbatimTextOutput("Vaccination_required")
-                ),
+                  verbatimTextOutput("vaccination_required")
+                ), 
                 
+                box(
+                  title = "Electrical Adapter & Converter Requirements", status = "primary", solidHeader = TRUE,
+                  selectizeInput("origin_country",
+                                 label = "Country of Origin",
+                                 choices = sort(unique(adapter_data$Origin.Country)),
+                                 options = list(placeholder = "Select your home country...")
+                  ),
+                  selectizeInput("dest_country",
+                                 label = "Destination Country",
+                                 choices = sort(unique(adapter_data$Destination.Country)),
+                                 options = list(placeholder = "Select your destination...")
+                  ),
+                  h4("Adapter Needed"),
+                  verbatimTextOutput("adapter_needed"),
+                  h4("Converter Needed"),
+                  verbatimTextOutput("converter_needed"),
+                  h4("Adapter Recommendation"),
+                  verbatimTextOutput("adapter_rec"),
+                  h4("Converter Recommendation"),
+                  verbatimTextOutput("converter_rec")
+                )
               )
       ),
-      
-      # Weather tab
-      tabItem(tabName = "weather",
-              fluidRow(
-                box(),
-                box()
-              )
-      ),
-      
+              
       # Airports tab
       tabItem(tabName = "airports",
               fluidRow(
