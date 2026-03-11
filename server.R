@@ -3,6 +3,9 @@ library(ggplot2)
 library(tidyverse)
 library(readxl)
 library(dplyr)
+library(httr)
+library(jsonlite)
+library(leaflet)
 
  #Renderblock passport 
 
@@ -14,9 +17,89 @@ currencyVcountry <- read.csv("currencyVcountry.csv")
 adapter_data <- read.csv("travel_adapter_converter.csv")
 vaccinationVcountry <- read.csv("vaccinationVcountry_correct.csv")
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
-  colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
-  arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
 
+colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
+arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
+airfare_data <- read.csv("Consumer_Airfare_Report__Table_1_-_Top_1,000_Contiguous_State_City-Pair_Markets_20260309.csv") %>%
+  mutate(
+    fare_low = as.numeric(gsub("[$,]", "", fare_low)),
+    fare_lg  = as.numeric(gsub("[$,]", "", fare_lg)),
+    fare     = as.numeric(gsub("[$,]", "", fare)),
+    city1    = trimws(city1),
+    city2    = trimws(city2)
+  )
+carrier_names <- c(
+  "AA" = "American Airlines",
+  "AS" = "Alaska Airlines",
+  "B6" = "JetBlue Airways",
+  "DL" = "Delta Air Lines",
+  "F9" = "Frontier Airlines",
+  "G4" = "Allegiant Air",
+  "HA" = "Hawaiian Airlines",
+  "NK" = "Spirit Airlines",
+  "OO" = "SkyWest Airlines",
+  "UA" = "United Airlines",
+  "WN" = "Southwest Airlines",
+  "YX" = "Republic Airways",
+  "YV" = "Mesa Airlines",
+  "QX" = "Horizon Air",
+  "SY" = "Sun Country Airlines",
+  "EV" = "ExpressJet",
+  "CO" = "Continental Airlines",
+  "DH" = "Independence Air",
+  "FL" = "AirTran Airways",
+  "HP" = "America West Airlines",
+  "NW" = "Northwest Airlines",
+  "TW" = "Trans World Airlines",
+  "TZ" = "ATA Airlines",
+  "US" = "US Airways",
+  "VX" = "Virgin America",
+  "3M" = "Silver Airways",
+  "9N" = "Trans States Airlines",
+  "A7" = "Air Midwest",
+  "E9" = "Boston-Maine Airways",
+  "FF" = "Tower Air",
+  "J7" = "Valujet Airlines",
+  "JI" = "Midway Airlines",
+  "KP" = "Kiwi International Air Lines",
+  "KW" = "Carnival Air Lines",
+  "L4" = "Mountain Air Express",
+  "MX" = "Mexicana",
+  "N5" = "Nolinor Aviation",
+  "N7" = "National Airlines",
+  "NJ" = "Vanguard Airlines",
+  "OE" = "Westair Airlines",
+  "P9" = "Pro Air",
+  "PN" = "Pan American Airways",
+  "QQ" = "Reno Air",
+  "RP" = "Chautauqua Airlines",
+  "RU" = "Cape Air",
+  "SM" = "Sunjet International",
+  "SX" = "Skybus Airlines",
+  "T3" = "Eastern Airways",
+  "TB" = "USAir Shuttle",
+  "U5" = "USA 3000 Airlines",
+  "W7" = "Western Pacific Airlines",
+  "W9" = "Aloha Airlines",
+  "WV" = "Air South",
+  "XP" = "Casino Express",
+  "ZA" = "Access Air",
+  "ZW" = "Air Wisconsin"
+)
+
+# Rename in the dataframe
+airfare_data <- airfare_data %>%
+  mutate(
+    carrier_lg  = recode(carrier_lg,  !!!carrier_names),
+    carrier_low = recode(carrier_low, !!!carrier_names)
+  )
+
+capitals <- read_excel("Capitals.xlsx")
+world_cities <- read_excel("worldcities.xlsx")
+world_cities <- world_cities[!is.na(world_cities$population) & 
+                               world_cities$population > 500000, ]
+
+# Rename visa info 
   v <- c(
     "90"            = "90 Days Visa Free",
     "30"            = "30 Days Visa Free",
@@ -117,5 +200,185 @@ function(input, output) {
       h4(paste0(input$UNESCOCountry, " (", length(sites), " sites)")),
       tags$ul(lapply(sites, tags$li))
     )
+  })
+  
+#Airling Pricing and Desitnation
+  # Dynamically update destination choices based on selected origin
+  output$dest_dropdown <- renderUI({
+    req(input$origin)
+    destinations <- airfare_data %>%
+      filter(city1 == input$origin) %>%
+      pull(city2) %>%
+      unique() %>%
+      sort()
+    selectizeInput("dest",
+                   label = "Destination City",
+                   choices = destinations,
+                   options = list(placeholder = "Select destination city..."))
+  })
+  
+  # Filter data for selected route on button click
+  route_data <- eventReactive(input$search, {
+    req(input$origin, input$dest)
+    airfare_data %>%
+      filter(city1 == input$origin, city2 == input$dest) %>%
+      arrange(desc(Year), desc(quarter)) %>%
+      slice(1)  # take the most recent record
+  })
+  
+  # Display results
+  output$route_results <- renderUI({
+    req(route_data())
+    df <- route_data()
+    
+    validate(need(nrow(df) > 0, "No data found for this route."))
+    
+    tagList(
+      h4(paste(df$city1, "→", df$city2)),
+      br(),
+      fluidRow(
+        column(6,
+               wellPanel(
+                 h4("✈ Largest Carrier"),
+                 h2(df$carrier_lg),
+                 p(paste("Market share:", round(as.numeric(df$large_ms) * 100, 1), "%")),
+                 p(paste("Avg fare: $", df$fare_lg))
+               )
+        ),
+        column(6,
+               wellPanel(
+                 h4("Cheapest Carrier"),
+                 h2(df$carrier_low),
+                 p(paste("Market share:", round(as.numeric(df$lf_ms) * 100, 1), "%")),
+                 p(paste("Avg fare: $", df$fare_low))
+               )
+        )
+      ),
+      br(),
+      p(paste("Distance:", df$nsmiles, "miles  |  passengers:", df$passengers, " |  Data from: Q", df$quarter, df$Year))
+    )
+  
+  # Weather map - initial render
+  output$weather_map <- renderLeaflet({
+    leaflet(world_cities) %>%
+      addProviderTiles(providers$CartoDB.Positron) %>%
+      setView(lng = 0, lat = 20, zoom = 2) %>%
+      addMarkers(
+        lng = ~lng,
+        lat = ~lat,
+        layerId = ~id,
+        label = ~paste0(city, ", ", country),
+        clusterOptions = markerClusterOptions()
+      )
+  })
+  
+  # Render city dropdown based on selected country
+  output$city_selector <- renderUI({
+    req(input$weather_country)
+    cities <- world_cities[world_cities$country == input$weather_country, ]
+    selectizeInput("weather_city", "Select City",
+                   choices = c("", sort(unique(cities$city))),
+                   options = list(placeholder = "Type or select a city..."))
+  })
+  
+  # Fly to country when dropdown selected
+  observeEvent(input$weather_country, {
+    req(input$weather_country)
+    
+    country_cities <- world_cities[world_cities$country == input$weather_country, ]
+    
+    if (nrow(country_cities) > 0) {
+      avg_lat <- mean(country_cities$lat, na.rm = TRUE)
+      avg_lng <- mean(country_cities$lng, na.rm = TRUE)
+      
+      leafletProxy("weather_map") %>%
+        setView(lng = avg_lng, lat = avg_lat, zoom = 5)
+    }
+  })
+  
+  # Fly to city when selected
+  observeEvent(input$weather_city, {
+    req(input$weather_city)
+    
+    row <- world_cities[world_cities$city == input$weather_city & 
+                          world_cities$country == input$weather_country, ]
+    
+    if (nrow(row) > 0) {
+      leafletProxy("weather_map") %>%
+        setView(lng = row$lng[1], lat = row$lat[1], zoom = 8)
+    }
+  })
+  
+  # When a city marker is clicked, fetch and display weather
+  observeEvent(input$weather_map_marker_click, {
+    click <- input$weather_map_marker_click
+    
+    row <- world_cities[world_cities$id == click$id, ]
+    lat <- row$lat
+    lon <- row$lng
+    city <- row$city
+    country <- row$country
+    
+    url <- paste0(
+      "https://api.open-meteo.com/v1/forecast?",
+      "latitude=", lat,
+      "&longitude=", lon,
+      "&current_weather=true",
+      "&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode",
+      "&temperature_unit=fahrenheit",
+      "&precipitation_unit=inch",
+      "&timezone=auto",
+      "&forecast_days=7"
+    )
+    
+    response <- GET(url)
+    data <- fromJSON(content(response, "text", encoding = "UTF-8"))
+    weather <- data$current_weather
+    forecast <- as.data.frame(data$daily)
+    
+    weather_description <- case_when(
+      weather$weathercode == 0  ~ "Clear sky ☀️",
+      weather$weathercode %in% 1:3   ~ "Partly cloudy ⛅",
+      weather$weathercode %in% 45:48 ~ "Foggy 🌫️",
+      weather$weathercode %in% 51:67 ~ "Rainy 🌧️",
+      weather$weathercode %in% 71:77 ~ "Snowy ❄️",
+      weather$weathercode %in% 80:82 ~ "Rain showers 🌦️",
+      weather$weathercode %in% 95:99 ~ "Thunderstorm ⛈️",
+      TRUE ~ "Unknown"
+    )
+    
+    forecast_rows <- paste0(
+      sapply(1:nrow(forecast), function(i) {
+        paste0(
+          "<tr>",
+          "<td style='padding:3px 8px'>", forecast$time[i], "</td>",
+          "<td style='padding:3px 8px'>", forecast$temperature_2m_max[i], "°F / ",
+          forecast$temperature_2m_min[i], "°F</td>",
+          "<td style='padding:3px 8px'>", forecast$precipitation_sum[i], " in</td>",
+          "</tr>"
+        )
+      }),
+      collapse = ""
+    )
+    
+    popup_text <- paste0(
+      "<b style='font-size:14px'>", city, ", ", country, "</b><br><br>",
+      "🌡️ <b>Now:</b> ", weather$temperature, "°F<br>",
+      "💨 <b>Wind:</b> ", weather$windspeed, " km/h<br>",
+      "🌤️ <b>Conditions:</b> ", weather_description, "<br><br>",
+      "<b>7-Day Forecast</b><br>",
+      "<table style='font-size:11px; border-collapse:collapse'>",
+      "<tr style='background:#f0f0f0'>",
+      "<th style='padding:3px 8px'>Date</th>",
+      "<th style='padding:3px 8px'>High / Low</th>",
+      "<th style='padding:3px 8px'>Precip</th>",
+      "</tr>",
+      forecast_rows,
+      "</table>"
+    )
+    
+    leafletProxy("weather_map") %>%
+      addPopups(lng = lon, lat = lat, popup = popup_text)
+  })
   })
 }
