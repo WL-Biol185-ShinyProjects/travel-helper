@@ -334,7 +334,10 @@ dashboardPage(
       # Travel Suggestions tab
       tabItem(tabName = "travel_suggestions",
               fluidRow(
-                box( ),
+                box(   title = "UNESCO World Heritage Sites to Visit", status = "success", solidHeader = TRUE,
+                       width = 6,
+                       uiOutput("sites_table")
+                   ),
   )
   )
 )
