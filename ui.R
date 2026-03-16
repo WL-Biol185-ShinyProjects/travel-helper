@@ -291,10 +291,6 @@ dashboardPage(
               )
       ),
 
-      # --- Airports tab ---
-
-      
-
       # Airports tab
       tabItem(tabName = "airports",
               fluidRow(
@@ -349,17 +345,15 @@ dashboardPage(
                   selectizeInput("UNESCOCountry",
                                  label = "Select Your Destination",
                                  choices = sort(unique(UNESCO$Country)))
-                )
-              ),
-              fluidRow(
-                box(
-                  title = "UNESCO World Heritage Sites to Visit", status = "success", solidHeader = TRUE,
-                  width = 6,
-                  uiOutput("sites_table")
+                ),
+                box(   title = "UNESCO World Heritage Sites to Visit", status = "success", solidHeader = TRUE,
+                       width = 6,
+                       uiOutput("sites_table")
                 )
               )
       )
 
-    ),
+#last three parentheses green, orange, pink
+    )
   )
   )
