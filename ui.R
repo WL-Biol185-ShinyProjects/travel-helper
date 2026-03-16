@@ -9,12 +9,13 @@ library(leaflet)
 passport_info        <- read.csv("passport-index-tidy.csv")
 currencyVcountry     <- read.csv("currencyVcountry.csv")
 vaccinationVcountry  <- read.csv("vaccinationVcountry.csv")
-colnames(vaccinationVcountry) <- c("Country", "Vaccination_required")  # FIX: rename columns in UI too
+  colnames(vaccinationVcountry) <- c("Country", "Vaccination_required")  # FIX: rename columns in UI too
 
 
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
-colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
-arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
+  colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
+  arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
+
 
 # Data loading
 passport_info <- read.csv("passport-index-tidy.csv")
@@ -25,6 +26,9 @@ adapter_data <- read.csv("travel_adapter_converter.csv")
   colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
   arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
 
+
+colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
+  arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
 UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
 
 airfare_data <- read.csv("Consumer_Airfare_Report__Table_1_-_Top_1,000_Contiguous_State_City-Pair_Markets_20260309.csv") %>%
@@ -68,64 +72,79 @@ carrier_names <- c(
 )
 
 v <- c(
-  "90"            = "90 Days Visa Free",
-  "30"            = "30 Days Visa Free",
-  "60"            = "60 Days Visa Free",
-  "360"           = "360 Days Visa Free",
-  "21"            = "21 Days Visa Free",
-  "28"            = "28 Days Visa Free",
-  "19"            = "19 Days Visa Free",
-  "180"           = "180 Days Visa Free",
-  "14"            = "14 Days Visa Free",
-  "42"            = "42 Days Visa Free",
-  "15"            = "15 Days Visa Free",
-  "240"           = "240 Days Visa Free",
-  "120"           = "120 Days Visa Free",
-  "eta"           = "Electronic Travel Authorization",
-  "e-visa"        = "Electronic Visa Needed",
-  "visa required" = "Visa Required",
-  "visa on arrival" = "Visa on Arrival",
-  "visa free"     = "Visa Free",
-  "-1"            = "In-Country, No Visa Needed"
+  "90" = "90 Days Visa Free", "30" = "30 Days Visa Free", "60" = "60 Days Visa Free",
+  "360" = "360 Days Visa Free", "21" = "21 Days Visa Free", "28" = "28 Days Visa Free",
+  "19" = "19 Days Visa Free", "180" = "180 Days Visa Free", "14" = "14 Days Visa Free",
+  "42" = "42 Days Visa Free", "15" = "15 Days Visa Free", "240" = "240 Days Visa Free",
+  "120" = "120 Days Visa Free", "eta" = "Electronic Travel Authorization",
+  "e-visa" = "Electronic Visa Needed", "visa required" = "Visa Required",
+  "visa on arrival" = "Visa on Arrival", "visa free" = "Visa Free",
+  "-1" = "In-Country, No Visa Needed"
 )
 passport_info$Requirement <- recode(passport_info$Requirement, !!!v)
-
 
 world_cities <- read_excel("worldcities.xlsx")
 world_cities <- world_cities[!is.na(world_cities$population) & 
                                world_cities$population > 500000, ]
-# Rename in the dataframe
+
 airfare_data <- airfare_data %>%
   mutate(
     carrier_lg  = recode(carrier_lg,  !!!carrier_names),
     carrier_low = recode(carrier_low, !!!carrier_names)
   )
 
+
 world_cities <- read_excel("worldcities.xlsx")
 world_cities <- world_cities[!is.na(world_cities$population) &
                                world_cities$population > 500000, ]
 
+#loading in data by month
+jan <- read.csv("NJAN_T_ONTIME_MARKETING.csv")
+feb <- read.csv("NFEB_T_ONTIME_MARKETING.csv")
+march <- read.csv("NMARCHT_ONTIME_MARKETING.csv")
+april <- read.csv("APRIL_T_ONTIME_MARKETING.csv")
+may <- read.csv("MAY_T_ONTIME_MARKETING.csv")
+june <- read.csv("JUNE_T_ONTIME_MARKETING.csv")
+july <- read.csv("JULY_T_ONTIME_MARKETING.csv")
+aug <- read.csv("AUG_T_ONTIME_MARKETING.csv")
+sept <- read.csv("SEPT_T_ONTIME_MARKETING.csv")
+oct <- read.csv("OCT_T_ONTIME_MARKETING.csv")
+nov <- read.csv("NOV_T_ONTIME_MARKETING.csv")
+dec <- read.csv("DEC_T_ONTIME_MARKETING.csv")
+
+#combining data
+new <- rbind(jan, feb)
+new <- rbind( new, march)
+new <- rbind( new, april)
+new <- rbind( new, may)
+new <- rbind( new, june)
+new <- rbind( new, july)
+new <- rbind( new, aug)
+new <- rbind( new, sept)
+new <- rbind( new, oct)
+new <- rbind( new, nov)
+final_flights <- rbind(new, dec)
+
 # --- UI ---
-dashboardPage(
-  dashboardHeader(title = "Travel Helper"),
-
-
 
   # Sidebar content
 
+
+dashboardPage(
+  dashboardHeader(title = "Travel Helper"),
+  
   dashboardSidebar(
     sidebarMenu(
-      menuItem("Welcome",            tabName = "welcome"),
+      menuItem("Welcome",              tabName = "welcome"),
       menuItem("International Travel", tabName = "international_travel"),
-      menuItem("Weather",            tabName = "weather"),
-      menuItem("Airports",           tabName = "airports"),
-      menuItem("Airlines",           tabName = "airlines"),
-      menuItem("Pricing",            tabName = "pricing"),
-      menuItem("Travel Suggestions", tabName = "travel_suggestions")
+      menuItem("Weather",              tabName = "weather"),
+      menuItem("Airports",             tabName = "airports"),
+      menuItem("Airlines",             tabName = "airlines"),
+      menuItem("Pricing",              tabName = "pricing"),
+      menuItem("Travel Suggestions",   tabName = "travel_suggestions")
     )
   ),
-
-  # Body content
+  
   dashboardBody(
     tabItems(
 
@@ -181,7 +200,6 @@ dashboardPage(
                     tags$li("✅ Discover sites to visit")
                   )
                 )
-
               )
       ),
 
@@ -190,34 +208,26 @@ dashboardPage(
               fluidRow(
                 box(
                   title = "What Travel Requirements do you Need?", status = "primary", solidHeader = TRUE,
-                  selectizeInput("Passport", 
+                  selectizeInput("Passport",
                                  label = "Your Passport",
-                                 choices = unique(passport_info$Passport)
-                                 
-                                ),
-                  selectizeInput("Destination", 
+                                 choices = unique(passport_info$Passport)),
+                  selectizeInput("Destination",
                                  label = "Your Destination",
-                                 choices = unique(passport_info$Destination)
-                                ),
-              
-                  h4("Requirement"), 
+                                 choices = unique(passport_info$Destination)),
+                  h4("Requirement"),
                   verbatimTextOutput("Requirement")
-                  
-                  ),
-                
+                ),
                 box(
                   title = "Currency", status = "info", solidHeader = TRUE,
                   # FIX: renamed from "Country" to "currency_country"
                   selectizeInput("currency_country",
                   title = "Currency Info", status = "primary", solidHeader = TRUE,
-                  selectizeInput("Country", 
+                  selectizeInput("Country",
                                  label = "Destination Country",
-                                 choices = (currencyVcountry$Country)
-                  ),
-                  h4("Currency"), 
+                                 choices = currencyVcountry$Country),
+                  h4("Currency"),
                   verbatimTextOutput("Currency")
                 ),
-                
                 box(
                   title = "Vaccinations", status = "warning", solidHeader = TRUE,
                   # FIX: renamed from "Country" to "vaccination_country"
@@ -233,21 +243,24 @@ dashboardPage(
                                  choices = (vaccinationVcountry$country_vaccination)
                   ),
                   h4("Vaccination required"), 
+                  title = "Vaccination Needed", status = "primary", solidHeader = TRUE,
+                  selectizeInput("country_vaccination",
+                                 label = "Country of Destination",
+                                 choices = vaccinationVcountry$country_vaccination),
+                  h4("Vaccination Required"),
+
                   verbatimTextOutput("vaccination_required")
-                ), 
-                
+                ),
                 box(
                   title = "Electrical Adapter & Converter Requirements", status = "primary", solidHeader = TRUE,
                   selectizeInput("origin_country",
                                  label = "Country of Origin",
                                  choices = sort(unique(adapter_data$Origin.Country)),
-                                 options = list(placeholder = "Select your home country...")
-                  ),
+                                 options = list(placeholder = "Select your home country...")),
                   selectizeInput("dest_country",
                                  label = "Destination Country",
                                  choices = sort(unique(adapter_data$Destination.Country)),
-                                 options = list(placeholder = "Select your destination...")
-                  ),
+                                 options = list(placeholder = "Select your destination...")),
                   h4("Adapter Needed"),
                   verbatimTextOutput("adapter_needed"),
                   h4("Converter Needed"),
@@ -259,8 +272,6 @@ dashboardPage(
                 )
               )
       ),
-      # --- Weather tab ---
-
       
       # Weather tab
       tabItem(tabName = "weather",
@@ -299,6 +310,7 @@ dashboardPage(
                   width = 8,
                   plotOutput("percentage_on_time", height = 400)
                 ),
+
                 # FIX: added width = 4 to empty box
                 box(width = 4),
                   plotOutput("percentage_on_time", height = 400)),
@@ -317,17 +329,16 @@ dashboardPage(
       # --- Pricing tab ---
       tabItem(tabName = "pricing",
               fluidRow(
-                box(width = 4,
-                    title = "Search a Route",
-                    status = "primary",
-                    solidHeader = TRUE,
-                    selectizeInput("origin",
-                                   label = "Departure City",
-                                   choices = sort(unique(airfare_data$city1)),
-                                   options = list(placeholder = "Select departure city...")),
-                    uiOutput("dest_dropdown"),
-                    actionButton("search", "Search",
-                                 class = "btn-primary", width = "100%")
+                box(
+                  width = 4,
+                  title = "Search a Route", status = "primary", solidHeader = TRUE,
+                  selectizeInput("origin",
+                                 label = "Departure City",
+                                 choices = sort(unique(airfare_data$city1)),
+                                 options = list(placeholder = "Select departure city...")),
+                  uiOutput("dest_dropdown"),
+                  actionButton("search", "Search",
+                               class = "btn-primary", width = "100%")
                 ),
                 box(width = 8,
                     title = "Route Information",
@@ -337,7 +348,9 @@ dashboardPage(
               )
       ),
 
-      # --- Travel Suggestions tab ---
+
+      # Travel Suggestions tab
+
       tabItem(tabName = "travel_suggestions",
               fluidRow(
                 box(
@@ -355,5 +368,9 @@ dashboardPage(
 
 #last three parentheses green, orange, pink
     )
-  )
-  )
+)
+)
+
+
+              
+               
