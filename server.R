@@ -71,7 +71,7 @@ v <- c(
 passport_info$Requirement <- recode(passport_info$Requirement, !!!v)
 
 # Server
-function(input, output) {
+function(input, output, session) {
   
   # Passport requirement
   output$Requirement <- renderText({
@@ -138,15 +138,71 @@ function(input, output) {
   })
   
   # UNESCO sites
+  selected_site <- reactiveVal(NULL)
+  
   output$sites_table <- renderUI({
     req(input$UNESCOCountry)
     sites <- UNESCO[UNESCO$Country == input$UNESCOCountry, "World Heritage Site", drop = TRUE]
+    
     tagList(
       h4(paste0(input$UNESCOCountry, " (", length(sites), " sites)")),
-      tags$ul(lapply(sites, tags$li))
+      tags$ul(
+        lapply(sites, function(site) {
+          tags$li(
+            actionLink(
+              inputId = paste0("site_", gsub("[^a-zA-Z0-9]", "_", site)),
+              label = site
+            )
+          )
+        })
+      )
     )
   })
   
+  # Observe each site click
+  observe({
+    req(input$UNESCOCountry)
+    sites <- UNESCO[UNESCO$Country == input$UNESCOCountry, "World Heritage Site", drop = TRUE]
+    
+    lapply(sites, function(site) {
+      id <- paste0("site_", gsub("[^a-zA-Z0-9]", "_", site))
+      observeEvent(input[[id]], {
+        selected_site(site)
+      }, ignoreInit = TRUE)
+    })
+  })
+  
+  output$site_image <- renderUI({
+    req(selected_site())
+    
+    url <- paste0(
+      "https://en.wikipedia.org/api/rest_v1/page/summary/",
+      URLencode(selected_site())
+    )
+    
+    response <- tryCatch(GET(url), error = function(e) NULL)
+    
+    if (!is.null(response) && status_code(response) == 200) {
+      data <- fromJSON(content(response, "text", encoding = "UTF-8"))
+      
+      img_url <- data$thumbnail$source
+      description <- data$extract
+      wiki_url <- data$content_urls$desktop$page
+      
+      tagList(
+        br(),
+        h4(selected_site()),
+        if (!is.null(img_url)) {
+          tags$img(src = img_url, width = "100%", 
+                   style = "border-radius: 8px; margin-bottom: 10px;")
+        },
+        p(description),
+        tags$a(href = wiki_url, target = "_blank", "📖 Read more on Wikipedia")
+      )
+    } else {
+      p("No image available for this site.")
+    }
+  })
   # Airfare - destination dropdown
   output$dest_dropdown <- renderUI({
     req(input$origin)

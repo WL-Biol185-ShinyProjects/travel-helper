@@ -268,18 +268,40 @@ dashboardPage(
       tabItem(tabName = "travel_suggestions",
               fluidRow(
                 box(
+                  width = 12, status = "primary", solidHeader = TRUE,
+                  title = "🗺️ Travel Suggestions",
+                  p("Discover UNESCO World Heritage Sites around the world!"),
+                  tags$ul(
+                    tags$li("1️⃣ Select a country from the dropdown below"),
+                    tags$li("2️⃣ Browse the list of UNESCO World Heritage Sites for that country"),
+                    tags$li("3️⃣ Click any site name to see a photo and description"),
+                    tags$li("4️⃣ Click the Wikipedia link to learn even more!")
+                  )
+                )
+              ),
+              fluidRow(
+                box(
                   title = "Where Are You Going?", status = "primary", solidHeader = TRUE,
                   selectizeInput("UNESCOCountry",
                                  label = "Select Your Destination",
-                                 choices = sort(unique(UNESCO$Country)))
+                                 choices = sort(unique(UNESCO$Country)),
+                                 options = list(placeholder = "Type or select a country..."))
                 )
               ),
-              
-                box(   title = "UNESCO World Heritage Sites to Visit", status = "success", solidHeader = TRUE,
-                       width = 6,
-                       uiOutput("sites_table")
-                   ),
-    )
+              fluidRow(
+                box(
+                  title = "UNESCO World Heritage Sites to Visit", status = "success", solidHeader = TRUE,
+                  width = 6,
+                  uiOutput("sites_table")
+                ),
+                box(
+                  title = "Site Details", status = "info", solidHeader = TRUE,
+                  width = 6,
+                  p("👆 Click a site name on the left to see details and photos here."),
+                  uiOutput("site_image")
+                )
+              )
+      )
   )
 )
 )
