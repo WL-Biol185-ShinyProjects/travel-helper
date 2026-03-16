@@ -12,11 +12,13 @@ passport_info <- read.csv("passport-index-tidy.csv")
 currencyVcountry <- read.csv("currencyVcountry.csv")
 vaccinationVcountry <- read.csv("vaccinationVcountry_correct.csv")
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
+arrival_2025 <- arrival_2025 %>% mutate(across(where(is.list), as.character))
 adapter_data <- read.csv("travel_adapter_converter.csv")
   colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
   arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
 UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
-airfare_data <- read.csv("Consumer_Airfare_Report__Table_1_-_Top_1,000_Contiguous_State_City-Pair_Markets_20260309.csv") %>%
+UNESCO <- UNESCO %>% mutate(across(where(is.list), as.character))
+airfare_data <- read.csv("airfare_data.csv") %>%
   mutate(
     fare_low = as.numeric(gsub("[$,]", "", fare_low)),
     fare_lg  = as.numeric(gsub("[$,]", "", fare_lg)),
@@ -108,6 +110,7 @@ passport_info$Requirement <- recode(passport_info$Requirement, !!!v)
 
 
 world_cities <- read_excel("worldcities.xlsx")
+world_cities <- world_cities %>% mutate(across(where(is.list), as.character))
 world_cities <- world_cities[!is.na(world_cities$population) & 
                                world_cities$population > 500000, ]
 # Rename in the dataframe
@@ -155,9 +158,8 @@ dashboardPage(
                     tags$li("💰 Pricing — Compare travel pricing"),
                     tags$li("🗺️ Travel Suggestions — Discover UNESCO World Heritage Sites to visit")
                   )
-                )
-              ),
-              fluidRow(
+                ),
+                
                 box(
                   width = 6, status = "info", solidHeader = TRUE,
                   title = "💡 Travel Tips",
@@ -177,6 +179,7 @@ dashboardPage(
                   tags$a(href = "https://step.state.gov", target = "_blank",
                          "👉 Enroll in STEP at step.state.gov")
                 ),
+                
                 box(
                   width = 6, status = "warning", solidHeader = TRUE,
                   title = "📋 Trip Planning Checklist",
@@ -266,19 +269,17 @@ dashboardPage(
                   title = "🌤️ World Weather",
                   p("Use the dropdowns to jump to a country and city, or browse the map and click any city marker to get the current conditions and 7-day forecast."),
                   p("🔍 Cities are clustered — zoom in to see individual city markers, then click to get weather.")
-                )
-              ),
-              fluidRow(
+                ),
+                
                 box(
                   width = 4, status = "info", solidHeader = TRUE,
                   title = "Jump to a Location",
                   selectizeInput("weather_country", "Select Country",
-                                 choices = c("", sort(unique(world_cities$country))),
+                                 choices = c("", sort(unique(as.character(world_cities$country)))),
                                  options = list(placeholder = "Type or select a country...")),
                   uiOutput("city_selector")
-                )
-              ),
-              fluidRow(
+                ),
+                
                 box(
                   width = 12, status = "success", solidHeader = TRUE,
                   title = "🗺️ Click a City for Weather",
@@ -316,7 +317,7 @@ dashboardPage(
                     solidHeader = TRUE,
                     selectizeInput("origin",
                                    label = "Departure City",
-                                   choices = sort(unique(airfare_data$city1)),
+                                   choices = sort(unique(as.character(airfare_data$city1))),
                                    options = list(placeholder = "Select departure city...")),
                     uiOutput("dest_dropdown"),
                     actionButton("search", "Search",
@@ -334,12 +335,22 @@ dashboardPage(
       # Travel Suggestions tab
       tabItem(tabName = "travel_suggestions",
               fluidRow(
-                box(   title = "UNESCO World Heritage Sites to Visit", status = "success", solidHeader = TRUE,
+                
+                 box(
+                   title = "Where Are You Going?", status = "primary", solidHeader = TRUE, 
+                   selectizeInput("UNESCOCountry", 
+                                  label = "Select Your Destination",
+                                  choices = sort(unique(UNESCO$Country)))
+                   
+                 ),
+               
+                 box(   title = "UNESCO World Heritage Sites to Visit", status = "success", solidHeader = TRUE,
                        width = 6,
                        uiOutput("sites_table")
-                   ),
-  )
-  )
+                   )
+              
+                      )
+              )
 )
 )
 )

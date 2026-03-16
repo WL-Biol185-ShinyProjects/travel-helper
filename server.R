@@ -12,15 +12,16 @@ library(leaflet)
 
 # Data loading
 UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
+UNESCO <- UNESCO %>% mutate(across(where(is.list), as.character))
 passport_info <- read.csv("passport-index-tidy.csv") 
 currencyVcountry <- read.csv("currencyVcountry.csv")
 adapter_data <- read.csv("travel_adapter_converter.csv")
 vaccinationVcountry <- read.csv("vaccinationVcountry_correct.csv")
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
-
+arrival_2025 <- arrival_2025 %>% mutate(across(where(is.list), as.character))
 colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
 arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
-airfare_data <- read.csv("Consumer_Airfare_Report__Table_1_-_Top_1,000_Contiguous_State_City-Pair_Markets_20260309.csv") %>%
+airfare_data <- read.csv("airfare_data.csv") %>%
   mutate(
     fare_low = as.numeric(gsub("[$,]", "", fare_low)),
     fare_lg  = as.numeric(gsub("[$,]", "", fare_lg)),
@@ -96,6 +97,7 @@ airfare_data <- airfare_data %>%
 
 capitals <- read_excel("Capitals.xlsx")
 world_cities <- read_excel("worldcities.xlsx")
+world_cities <- world_cities %>% mutate(across(where(is.list), as.character))
 world_cities <- world_cities[!is.na(world_cities$population) & 
                                world_cities$population > 500000, ]
 
@@ -177,6 +179,8 @@ function(input, output) {
     adapter_result()$Converter.Recommendation
   })
   
+  
+  
   # Airports chart
   output$percentage_on_time <- renderPlot({
     ggplot(arrival_2025, aes(x = airport, y = pct_on_time, fill = pct_on_time)) +
@@ -209,6 +213,7 @@ function(input, output) {
     destinations <- airfare_data %>%
       filter(city1 == input$origin) %>%
       pull(city2) %>%
+      as.character() %>%
       unique() %>%
       sort()
     selectizeInput("dest",
@@ -231,32 +236,38 @@ function(input, output) {
     req(route_data())
     df <- route_data()
     
-    validate(need(nrow(df) > 0, "No data found for this route."))
+    if (nrow(df) == 0) {
+      return(p("No data found for this route."))
+    }
     
     tagList(
-      h4(paste(df$city1, "→", df$city2)),
+      h4(paste(as.character(df$city1), "→", as.character(df$city2))),
       br(),
       fluidRow(
         column(6,
                wellPanel(
                  h4("✈ Largest Carrier"),
-                 h2(df$carrier_lg),
+                 h2(as.character(df$carrier_lg)),
                  p(paste("Market share:", round(as.numeric(df$large_ms) * 100, 1), "%")),
-                 p(paste("Avg fare: $", df$fare_lg))
+                 p(paste("Avg fare: $", as.character(df$fare_lg)))
                )
         ),
         column(6,
                wellPanel(
                  h4("Cheapest Carrier"),
-                 h2(df$carrier_low),
+                 h2(as.character(df$carrier_low)),
                  p(paste("Market share:", round(as.numeric(df$lf_ms) * 100, 1), "%")),
-                 p(paste("Avg fare: $", df$fare_low))
+                 p(paste("Avg fare: $", as.character(df$fare_low)))
                )
         )
       ),
       br(),
-      p(paste("Distance:", df$nsmiles, "miles  |  passengers:", df$passengers, " |  Data from: Q", df$quarter, df$Year))
+      p(paste("Distance:", as.character(df$nsmiles), 
+              "miles  |  passengers:", as.character(df$passengers), 
+              " |  Data from: Q", as.character(df$quarter), 
+              as.character(df$Year)))
     )
+  })
   
   # Weather map - initial render
   output$weather_map <- renderLeaflet({
@@ -380,5 +391,6 @@ function(input, output) {
     leafletProxy("weather_map") %>%
       addPopups(lng = lon, lat = lat, popup = popup_text)
   })
-  })
-}
+  
+  
+  }
