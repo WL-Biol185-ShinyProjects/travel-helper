@@ -286,7 +286,6 @@ dashboardPage(
       # Travel Suggestions tab
       tabItem(tabName = "travel_suggestions",
               fluidRow(
-
                  box(
                    title = "Where Are You Going?", status = "primary", solidHeader = TRUE, 
                    selectizeInput("UNESCOCountry", 
@@ -294,7 +293,7 @@ dashboardPage(
                                   choices = sort(unique(UNESCO$Country)))
                    
                  ),
-               
+          
                  box(   title = "UNESCO World Heritage Sites to Visit", status = "success", solidHeader = TRUE,
                        width = 6,
                        uiOutput("sites_table")
