@@ -7,14 +7,17 @@ library(httr)
 library(jsonlite)
 library(leaflet)
 
+ #Renderblock passport 
+
 
 # Data loading
 UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
 passport_info <- read.csv("passport-index-tidy.csv") 
 currencyVcountry <- read.csv("currencyVcountry.csv")
-vaccinationVcountry <- read.csv("vaccinationVcountry.csv")
-colnames(vaccinationVcountry) <- c("Country", "Vaccination_required")
+adapter_data <- read.csv("travel_adapter_converter.csv")
+vaccinationVcountry <- read.csv("vaccinationVcountry_correct.csv")
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
+
 colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
 arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
 airfare_data <- read.csv("Consumer_Airfare_Report__Table_1_-_Top_1,000_Contiguous_State_City-Pair_Markets_20260309.csv") %>%
@@ -96,7 +99,30 @@ world_cities <- read_excel("worldcities.xlsx")
 world_cities <- world_cities[!is.na(world_cities$population) & 
                                world_cities$population > 500000, ]
 
-
+# Rename visa info 
+  v <- c(
+    "90"            = "90 Days Visa Free",
+    "30"            = "30 Days Visa Free",
+    "60"            = "60 Days Visa Free",
+    "360"           = "360 Days Visa Free",
+    "21"            = "21 Days Visa Free",
+    "28"            = "28 Days Visa Free",
+    "19"            = "19 Days Visa Free",
+    "180"           = "180 Days Visa Free",
+    "14"            = "14 Days Visa Free",
+    "42"            = "42 Days Visa Free",
+    "15"            = "15 Days Visa Free",
+    "240"           = "240 Days Visa Free",
+    "120"           = "120 Days Visa Free",
+    "eta"           = "Electronic Travel Authorization",
+    "e-visa"        = "Electronic Visa Needed",
+    "visa required" = "Visa Required",
+    "visa on arrival" = "Visa on Arrival",
+    "visa free"     = "Visa Free",
+    "-1"            = "In-Country, No Visa Needed"
+  )
+  passport_info$Requirement <- recode(passport_info$Requirement, !!!v)
+  
 # Server
 function(input, output) {
   
@@ -113,12 +139,42 @@ function(input, output) {
   
   # Currency
   output$Currency <- renderText({
-    currencyVcountry[currencyVcountry$Country == input$Country, "Currency"]
-  })
+
+    currencyVcountry [currencyVcountry$Country == input$Country, "Currency"]
+     })
   
   # Vaccinations
-  output$Vaccination_required <- renderText({
-    vaccinationVcountry[vaccinationVcountry$Country == input$Country, "Vaccination_required"]
+  output$vaccination_required <- renderText({
+    vaccinationVcountry[vaccinationVcountry$country_vaccination == input$country_vaccination, "vaccination_required"]
+  })
+  
+  # Adapter
+  adapter_result <- reactive({
+    req(input$origin_country, input$dest_country)
+    
+    adapter_data %>%
+      filter(Origin.Country == input$origin_country,
+             Destination.Country == input$dest_country)
+  })
+  
+  output$adapter_needed <- renderText({
+    req(nrow(adapter_result()) > 0)
+    adapter_result()$Adapter.Needed
+  })
+  
+  output$converter_needed <- renderText({
+    req(nrow(adapter_result()) > 0)
+    adapter_result()$Converter.Needed
+  })
+  
+  output$adapter_rec <- renderText({
+    req(nrow(adapter_result()) > 0)
+    adapter_result()$Adapter.Recommendation
+  })
+  
+  output$converter_rec <- renderText({
+    req(nrow(adapter_result()) > 0)
+    adapter_result()$Converter.Recommendation
   })
   
   # Airports chart
