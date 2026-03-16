@@ -2,18 +2,20 @@ library(shiny)
 library(shinydashboard)
 library(readxl)
 library(dplyr)
-library(plotly)
 library(leaflet)
 
+# --- Data loading ---
+passport_info        <- read.csv("passport-index-tidy.csv")
+currencyVcountry     <- read.csv("currencyVcountry.csv")
+vaccinationVcountry  <- read.csv("vaccinationVcountry.csv")
+colnames(vaccinationVcountry) <- c("Country", "Vaccination_required")  # FIX: rename columns in UI too
 
-# Data loading
-passport_info <- read.csv("passport-index-tidy.csv")
-currencyVcountry <- read.csv("currencyVcountry.csv")
-vaccinationVcountry <- read.csv("vaccinationVcountry.csv")
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
 colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
 arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
+
 UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
+
 airfare_data <- read.csv("Consumer_Airfare_Report__Table_1_-_Top_1,000_Contiguous_State_City-Pair_Markets_20260309.csv") %>%
   mutate(
     fare_low = as.numeric(gsub("[$,]", "", fare_low)),
@@ -22,79 +24,52 @@ airfare_data <- read.csv("Consumer_Airfare_Report__Table_1_-_Top_1,000_Contiguou
     city1    = trimws(city1),
     city2    = trimws(city2)
   )
+
 carrier_names <- c(
-  "AA" = "American Airlines",
-  "AS" = "Alaska Airlines",
-  "B6" = "JetBlue Airways",
-  "DL" = "Delta Air Lines",
-  "F9" = "Frontier Airlines",
-  "G4" = "Allegiant Air",
-  "HA" = "Hawaiian Airlines",
-  "NK" = "Spirit Airlines",
-  "OO" = "SkyWest Airlines",
-  "UA" = "United Airlines",
-  "WN" = "Southwest Airlines",
-  "YX" = "Republic Airways",
-  "YV" = "Mesa Airlines",
-  "QX" = "Horizon Air",
-  "SY" = "Sun Country Airlines",
-  "EV" = "ExpressJet",
-  "CO" = "Continental Airlines",
-  "DH" = "Independence Air",
-  "FL" = "AirTran Airways",
-  "HP" = "America West Airlines",
-  "NW" = "Northwest Airlines",
-  "TW" = "Trans World Airlines",
-  "TZ" = "ATA Airlines",
-  "US" = "US Airways",
-  "VX" = "Virgin America",
-  "3M" = "Silver Airways",
-  "9N" = "Trans States Airlines",
-  "A7" = "Air Midwest",
-  "E9" = "Boston-Maine Airways",
-  "FF" = "Tower Air",
-  "J7" = "Valujet Airlines",
-  "JI" = "Midway Airlines",
-  "KP" = "Kiwi International Air Lines",
-  "KW" = "Carnival Air Lines",
-  "L4" = "Mountain Air Express",
-  "MX" = "Mexicana",
-  "N5" = "Nolinor Aviation",
-  "N7" = "National Airlines",
-  "NJ" = "Vanguard Airlines",
-  "OE" = "Westair Airlines",
-  "P9" = "Pro Air",
-  "PN" = "Pan American Airways",
-  "QQ" = "Reno Air",
-  "RP" = "Chautauqua Airlines",
-  "RU" = "Cape Air",
-  "SM" = "Sunjet International",
-  "SX" = "Skybus Airlines",
-  "T3" = "Eastern Airways",
-  "TB" = "USAir Shuttle",
-  "U5" = "USA 3000 Airlines",
-  "W7" = "Western Pacific Airlines",
-  "W9" = "Aloha Airlines",
-  "WV" = "Air South",
-  "XP" = "Casino Express",
-  "ZA" = "Access Air",
-  "ZW" = "Air Wisconsin"
+  "AA" = "American Airlines",   "AS" = "Alaska Airlines",
+  "B6" = "JetBlue Airways",     "DL" = "Delta Air Lines",
+  "F9" = "Frontier Airlines",   "G4" = "Allegiant Air",
+  "HA" = "Hawaiian Airlines",   "NK" = "Spirit Airlines",
+  "OO" = "SkyWest Airlines",    "UA" = "United Airlines",
+  "WN" = "Southwest Airlines",  "YX" = "Republic Airways",
+  "YV" = "Mesa Airlines",       "QX" = "Horizon Air",
+  "SY" = "Sun Country Airlines","EV" = "ExpressJet",
+  "CO" = "Continental Airlines","DH" = "Independence Air",
+  "FL" = "AirTran Airways",     "HP" = "America West Airlines",
+  "NW" = "Northwest Airlines",  "TW" = "Trans World Airlines",
+  "TZ" = "ATA Airlines",        "US" = "US Airways",
+  "VX" = "Virgin America",      "3M" = "Silver Airways",
+  "9N" = "Trans States Airlines","A7" = "Air Midwest",
+  "E9" = "Boston-Maine Airways","FF" = "Tower Air",
+  "J7" = "Valujet Airlines",    "JI" = "Midway Airlines",
+  "KP" = "Kiwi International",  "KW" = "Carnival Air Lines",
+  "L4" = "Mountain Air Express","MX" = "Mexicana",
+  "N5" = "Nolinor Aviation",    "N7" = "National Airlines",
+  "NJ" = "Vanguard Airlines",   "OE" = "Westair Airlines",
+  "P9" = "Pro Air",             "PN" = "Pan American Airways",
+  "QQ" = "Reno Air",            "RP" = "Chautauqua Airlines",
+  "RU" = "Cape Air",            "SM" = "Sunjet International",
+  "SX" = "Skybus Airlines",     "T3" = "Eastern Airways",
+  "TB" = "USAir Shuttle",       "U5" = "USA 3000 Airlines",
+  "W7" = "Western Pacific Airlines","W9" = "Aloha Airlines",
+  "WV" = "Air South",           "XP" = "Casino Express",
+  "ZA" = "Access Air",          "ZW" = "Air Wisconsin"
 )
 
-world_cities <- read_excel("worldcities.xlsx")
-world_cities <- world_cities[!is.na(world_cities$population) & 
-                               world_cities$population > 500000, ]
-# Rename in the dataframe
 airfare_data <- airfare_data %>%
   mutate(
     carrier_lg  = recode(carrier_lg,  !!!carrier_names),
     carrier_low = recode(carrier_low, !!!carrier_names)
   )
 
-#Dashboard page set up
+world_cities <- read_excel("worldcities.xlsx")
+world_cities <- world_cities[!is.na(world_cities$population) &
+                               world_cities$population > 500000, ]
+
+# --- UI ---
 dashboardPage(
   dashboardHeader(title = "Travel Helper"),
-  
+
   dashboardSidebar(
     sidebarMenu(
       menuItem("Welcome",              tabName = "welcome"),
@@ -106,11 +81,11 @@ dashboardPage(
       menuItem("Travel Suggestions",   tabName = "travel_suggestions")
     )
   ),
-  
+
   dashboardBody(
     tabItems(
-      
-      # Welcome tab
+
+      # --- Welcome tab ---
       tabItem(tabName = "welcome",
               fluidRow(
                 box(
@@ -164,8 +139,8 @@ dashboardPage(
                 )
               )
       ),
-      
-      # International Travel tab
+
+      # --- International Travel tab ---
       tabItem(tabName = "international_travel",
               fluidRow(
                 box(
@@ -180,23 +155,28 @@ dashboardPage(
                   verbatimTextOutput("Requirement")
                 ),
                 box(
-                  selectizeInput("Country",
+                  title = "Currency", status = "info", solidHeader = TRUE,
+                  # FIX: renamed from "Country" to "currency_country"
+                  selectizeInput("currency_country",
                                  label = "Destination Country",
                                  choices = currencyVcountry$Country),
                   h4("Currency"),
                   verbatimTextOutput("Currency")
                 ),
                 box(
-                  selectizeInput("Country",
+                  title = "Vaccinations", status = "warning", solidHeader = TRUE,
+                  # FIX: renamed from "Country" to "vaccination_country"
+                  selectizeInput("vaccination_country",
                                  label = "Destination Country",
                                  choices = vaccinationVcountry$Country),
                   h4("Vaccination Required"),
-                  verbatimTextOutput("Vaccination Required")
+                  # FIX: removed space from output ID
+                  verbatimTextOutput("Vaccination_required")
                 )
               )
       ),
-      
-      # Weather tab
+
+      # --- Weather tab ---
       tabItem(tabName = "weather",
               fluidRow(
                 box(
@@ -224,8 +204,8 @@ dashboardPage(
                 )
               )
       ),
-      
-      # Airports tab
+
+      # --- Airports tab ---
       tabItem(tabName = "airports",
               fluidRow(
                 box(
@@ -233,19 +213,20 @@ dashboardPage(
                   width = 8,
                   plotOutput("percentage_on_time", height = 400)
                 ),
-                box()
+                # FIX: added width = 4 to empty box
+                box(width = 4)
               )
       ),
-      
-      # Airlines tab
+
+      # --- Airlines tab ---
       tabItem(tabName = "airlines",
               fluidRow(
                 box(),
                 box()
               )
       ),
-      
-      # Pricing tab
+
+      # --- Pricing tab ---
       tabItem(tabName = "pricing",
               fluidRow(
                 box(width = 4,
@@ -265,11 +246,10 @@ dashboardPage(
                     status = "primary",
                     solidHeader = TRUE,
                     uiOutput("route_results"))
-                      )
-              ),
-  
+              )
+      ),
 
-      # Travel Suggestions tab
+      # --- Travel Suggestions tab ---
       tabItem(tabName = "travel_suggestions",
               fluidRow(
                 box(
@@ -287,7 +267,7 @@ dashboardPage(
                 )
               )
       )
-      
+
     )
   )
 )
