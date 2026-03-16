@@ -6,7 +6,6 @@ library(dplyr)
 library(plotly)
 library(leaflet)
 
-
 # Data loading
 passport_info <- read.csv("passport-index-tidy.csv")
 currencyVcountry <- read.csv("currencyVcountry.csv")
@@ -14,11 +13,16 @@ vaccinationVcountry <- read.csv("vaccinationVcountry_correct.csv")
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
 arrival_2025 <- arrival_2025 %>% mutate(across(where(is.list), as.character))
 adapter_data <- read.csv("travel_adapter_converter.csv")
-  colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
-  arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
+colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
+arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
 UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
 UNESCO <- UNESCO %>% mutate(across(where(is.list), as.character))
 airfare_data <- read.csv("airfare_data.csv") %>%
+
+unesco_coords <- read_excel("UNESCO_COORDS.xlsx")
+unesco_coords <- unesco_coords[!is.na(unesco_coords$Latitude) & 
+                                 !is.na(unesco_coords$Longitude), ]
+airfare_data <- read.csv("Consumer_Airfare_Report__Table_1_-_Top_1,000_Contiguous_State_City-Pair_Markets_20260309.csv") %>%
   mutate(
     fare_low = as.numeric(gsub("[$,]", "", fare_low)),
     fare_lg  = as.numeric(gsub("[$,]", "", fare_lg)),
@@ -26,117 +30,67 @@ airfare_data <- read.csv("airfare_data.csv") %>%
     city1    = trimws(city1),
     city2    = trimws(city2)
   )
+
 carrier_names <- c(
-  "AA" = "American Airlines",
-  "AS" = "Alaska Airlines",
-  "B6" = "JetBlue Airways",
-  "DL" = "Delta Air Lines",
-  "F9" = "Frontier Airlines",
-  "G4" = "Allegiant Air",
-  "HA" = "Hawaiian Airlines",
-  "NK" = "Spirit Airlines",
-  "OO" = "SkyWest Airlines",
-  "UA" = "United Airlines",
-  "WN" = "Southwest Airlines",
-  "YX" = "Republic Airways",
-  "YV" = "Mesa Airlines",
-  "QX" = "Horizon Air",
-  "SY" = "Sun Country Airlines",
-  "EV" = "ExpressJet",
-  "CO" = "Continental Airlines",
-  "DH" = "Independence Air",
-  "FL" = "AirTran Airways",
-  "HP" = "America West Airlines",
-  "NW" = "Northwest Airlines",
-  "TW" = "Trans World Airlines",
-  "TZ" = "ATA Airlines",
-  "US" = "US Airways",
-  "VX" = "Virgin America",
-  "3M" = "Silver Airways",
-  "9N" = "Trans States Airlines",
-  "A7" = "Air Midwest",
-  "E9" = "Boston-Maine Airways",
-  "FF" = "Tower Air",
-  "J7" = "Valujet Airlines",
-  "JI" = "Midway Airlines",
-  "KP" = "Kiwi International Air Lines",
-  "KW" = "Carnival Air Lines",
-  "L4" = "Mountain Air Express",
-  "MX" = "Mexicana",
-  "N5" = "Nolinor Aviation",
-  "N7" = "National Airlines",
-  "NJ" = "Vanguard Airlines",
-  "OE" = "Westair Airlines",
-  "P9" = "Pro Air",
-  "PN" = "Pan American Airways",
-  "QQ" = "Reno Air",
-  "RP" = "Chautauqua Airlines",
-  "RU" = "Cape Air",
-  "SM" = "Sunjet International",
-  "SX" = "Skybus Airlines",
-  "T3" = "Eastern Airways",
-  "TB" = "USAir Shuttle",
-  "U5" = "USA 3000 Airlines",
-  "W7" = "Western Pacific Airlines",
-  "W9" = "Aloha Airlines",
-  "WV" = "Air South",
-  "XP" = "Casino Express",
-  "ZA" = "Access Air",
-  "ZW" = "Air Wisconsin"
+  "AA" = "American Airlines", "AS" = "Alaska Airlines", "B6" = "JetBlue Airways",
+  "DL" = "Delta Air Lines", "F9" = "Frontier Airlines", "G4" = "Allegiant Air",
+  "HA" = "Hawaiian Airlines", "NK" = "Spirit Airlines", "OO" = "SkyWest Airlines",
+  "UA" = "United Airlines", "WN" = "Southwest Airlines", "YX" = "Republic Airways",
+  "YV" = "Mesa Airlines", "QX" = "Horizon Air", "SY" = "Sun Country Airlines",
+  "EV" = "ExpressJet", "CO" = "Continental Airlines", "DH" = "Independence Air",
+  "FL" = "AirTran Airways", "HP" = "America West Airlines", "NW" = "Northwest Airlines",
+  "TW" = "Trans World Airlines", "TZ" = "ATA Airlines", "US" = "US Airways",
+  "VX" = "Virgin America", "3M" = "Silver Airways", "9N" = "Trans States Airlines",
+  "A7" = "Air Midwest", "E9" = "Boston-Maine Airways", "FF" = "Tower Air",
+  "J7" = "Valujet Airlines", "JI" = "Midway Airlines", "KP" = "Kiwi International Air Lines",
+  "KW" = "Carnival Air Lines", "L4" = "Mountain Air Express", "MX" = "Mexicana",
+  "N5" = "Nolinor Aviation", "N7" = "National Airlines", "NJ" = "Vanguard Airlines",
+  "OE" = "Westair Airlines", "P9" = "Pro Air", "PN" = "Pan American Airways",
+  "QQ" = "Reno Air", "RP" = "Chautauqua Airlines", "RU" = "Cape Air",
+  "SM" = "Sunjet International", "SX" = "Skybus Airlines", "T3" = "Eastern Airways",
+  "TB" = "USAir Shuttle", "U5" = "USA 3000 Airlines", "W7" = "Western Pacific Airlines",
+  "W9" = "Aloha Airlines", "WV" = "Air South", "XP" = "Casino Express",
+  "ZA" = "Access Air", "ZW" = "Air Wisconsin"
 )
 
 v <- c(
-  "90"            = "90 Days Visa Free",
-  "30"            = "30 Days Visa Free",
-  "60"            = "60 Days Visa Free",
-  "360"           = "360 Days Visa Free",
-  "21"            = "21 Days Visa Free",
-  "28"            = "28 Days Visa Free",
-  "19"            = "19 Days Visa Free",
-  "180"           = "180 Days Visa Free",
-  "14"            = "14 Days Visa Free",
-  "42"            = "42 Days Visa Free",
-  "15"            = "15 Days Visa Free",
-  "240"           = "240 Days Visa Free",
-  "120"           = "120 Days Visa Free",
-  "eta"           = "Electronic Travel Authorization",
-  "e-visa"        = "Electronic Visa Needed",
-  "visa required" = "Visa Required",
-  "visa on arrival" = "Visa on Arrival",
-  "visa free"     = "Visa Free",
-  "-1"            = "In-Country, No Visa Needed"
+  "90" = "90 Days Visa Free", "30" = "30 Days Visa Free", "60" = "60 Days Visa Free",
+  "360" = "360 Days Visa Free", "21" = "21 Days Visa Free", "28" = "28 Days Visa Free",
+  "19" = "19 Days Visa Free", "180" = "180 Days Visa Free", "14" = "14 Days Visa Free",
+  "42" = "42 Days Visa Free", "15" = "15 Days Visa Free", "240" = "240 Days Visa Free",
+  "120" = "120 Days Visa Free", "eta" = "Electronic Travel Authorization",
+  "e-visa" = "Electronic Visa Needed", "visa required" = "Visa Required",
+  "visa on arrival" = "Visa on Arrival", "visa free" = "Visa Free",
+  "-1" = "In-Country, No Visa Needed"
 )
 passport_info$Requirement <- recode(passport_info$Requirement, !!!v)
-
 
 world_cities <- read_excel("worldcities.xlsx")
 world_cities <- world_cities %>% mutate(across(where(is.list), as.character))
 world_cities <- world_cities[!is.na(world_cities$population) & 
                                world_cities$population > 500000, ]
-# Rename in the dataframe
+
 airfare_data <- airfare_data %>%
   mutate(
     carrier_lg  = recode(carrier_lg,  !!!carrier_names),
     carrier_low = recode(carrier_low, !!!carrier_names)
   )
 
-#Dashboard page set up
 dashboardPage(
   dashboardHeader(title = "Travel Helper"),
-  # Sidebar content
+  
   dashboardSidebar(
     sidebarMenu(
-      menuItem("Welcome",            tabName = "welcome"),
+      menuItem("Welcome",              tabName = "welcome"),
       menuItem("International Travel", tabName = "international_travel"),
-      menuItem("Weather",            tabName = "weather"),
-      menuItem("Airports",           tabName = "airports"),
-      menuItem("Airlines",           tabName = "airlines"),
-      menuItem("Pricing",            tabName = "pricing"),
-      menuItem("Travel Suggestions", tabName = "travel_suggestions")
+      menuItem("Weather",              tabName = "weather"),
+      menuItem("Airports",             tabName = "airports"),
+      menuItem("Airlines",             tabName = "airlines"),
+      menuItem("Pricing",              tabName = "pricing"),
+      menuItem("Travel Suggestions",   tabName = "travel_suggestions")
     )
   ),
-
-  # Body content
+  
   dashboardBody(
     tabItems(
       
@@ -192,7 +146,6 @@ dashboardPage(
                     tags$li("✅ Discover sites to visit")
                   )
                 )
-
               )
       ),
       
@@ -201,53 +154,41 @@ dashboardPage(
               fluidRow(
                 box(
                   title = "What Travel Requirements do you Need?", status = "primary", solidHeader = TRUE,
-                  selectizeInput("Passport", 
+                  selectizeInput("Passport",
                                  label = "Your Passport",
-                                 choices = unique(passport_info$Passport)
-                                 
-                                ),
-                  selectizeInput("Destination", 
+                                 choices = unique(passport_info$Passport)),
+                  selectizeInput("Destination",
                                  label = "Your Destination",
-                                 choices = unique(passport_info$Destination)
-                                ),
-              
-                  h4("Requirement"), 
+                                 choices = unique(passport_info$Destination)),
+                  h4("Requirement"),
                   verbatimTextOutput("Requirement")
-                  
-                  ),
-                
+                ),
                 box(
                   title = "Currency Info", status = "primary", solidHeader = TRUE,
-                  selectizeInput("Country", 
+                  selectizeInput("Country",
                                  label = "Destination Country",
-                                 choices = (currencyVcountry$Country)
-                  ),
-                  h4("Currency"), 
+                                 choices = currencyVcountry$Country),
+                  h4("Currency"),
                   verbatimTextOutput("Currency")
                 ),
-                
                 box(
-                  title = "Vaccination Nedded", status = "primary", solidHeader = TRUE,
-                  selectizeInput("country_vaccination", 
-                                 label = "Country of destination",
-                                 choices = (vaccinationVcountry$country_vaccination)
-                  ),
-                  h4("Vaccination required"), 
+                  title = "Vaccination Needed", status = "primary", solidHeader = TRUE,
+                  selectizeInput("country_vaccination",
+                                 label = "Country of Destination",
+                                 choices = vaccinationVcountry$country_vaccination),
+                  h4("Vaccination Required"),
                   verbatimTextOutput("vaccination_required")
-                ), 
-                
+                ),
                 box(
                   title = "Electrical Adapter & Converter Requirements", status = "primary", solidHeader = TRUE,
                   selectizeInput("origin_country",
                                  label = "Country of Origin",
                                  choices = sort(unique(adapter_data$Origin.Country)),
-                                 options = list(placeholder = "Select your home country...")
-                  ),
+                                 options = list(placeholder = "Select your home country...")),
                   selectizeInput("dest_country",
                                  label = "Destination Country",
                                  choices = sort(unique(adapter_data$Destination.Country)),
-                                 options = list(placeholder = "Select your destination...")
-                  ),
+                                 options = list(placeholder = "Select your destination...")),
                   h4("Adapter Needed"),
                   verbatimTextOutput("adapter_needed"),
                   h4("Converter Needed"),
@@ -259,7 +200,6 @@ dashboardPage(
                 )
               )
       ),
-
       
       # Weather tab
       tabItem(tabName = "weather",
@@ -288,14 +228,14 @@ dashboardPage(
               )
       ),
       
-
       # Airports tab
       tabItem(tabName = "airports",
               fluidRow(
                 box(
                   title = "What is the Best Airport to Fly into?", status = "primary", solidHeader = TRUE,
                   width = 8,
-                  plotOutput("percentage_on_time", height = 400)),
+                  plotOutput("percentage_on_time", height = 400)
+                ),
                 box()
               )
       ),
@@ -323,19 +263,30 @@ dashboardPage(
                     actionButton("search", "Search",
                                  class = "btn-primary", width = "100%")
                 ),
-                box(width = 8,
-                    title = "Route Information",
-                    status = "primary",
-                    solidHeader = TRUE,
-                    uiOutput("route_results"))
-                      )
-              ),
-  
 
+                box(
+                  width = 4,
+                  title = "Search a Route", status = "primary", solidHeader = TRUE,
+                  selectizeInput("origin",
+                                 label = "Departure City",
+                                 choices = sort(unique(airfare_data$city1)),
+                                 options = list(placeholder = "Select departure city...")),
+                  uiOutput("dest_dropdown"),
+                  actionButton("search", "Search",
+                               class = "btn-primary", width = "100%")
+                ),
+                box(
+                  width = 8,
+                  title = "Route Information", status = "primary", solidHeader = TRUE,
+                  uiOutput("route_results")
+                )
+              )
+      ),
+      
       # Travel Suggestions tab
       tabItem(tabName = "travel_suggestions",
               fluidRow(
-                
+
                  box(
                    title = "Where Are You Going?", status = "primary", solidHeader = TRUE, 
                    selectizeInput("UNESCOCountry", 
@@ -347,10 +298,50 @@ dashboardPage(
                  box(   title = "UNESCO World Heritage Sites to Visit", status = "success", solidHeader = TRUE,
                        width = 6,
                        uiOutput("sites_table")
-                   )
+                   ),
+
+                box(
+                  width = 12, status = "primary", solidHeader = TRUE,
+                  title = "🗺️ Travel Suggestions",
+                  p("Discover UNESCO World Heritage Sites around the world!"),
+                  tags$ul(
+                    tags$li("1️⃣ Select a country from the dropdown below"),
+                    tags$li("2️⃣ Browse the list of UNESCO World Heritage Sites for that country"),
+                    tags$li("3️⃣ Click any site name to see a photo and description"),
+                    tags$li("4️⃣ Click the Wikipedia link to learn even more!"),
+                    tags$li("5️⃣ Explore the map below to see all UNESCO sites — click any marker for details!")
+                  )
+                ),
+            
+                box(
+                  title = "Where Are You Going?", status = "primary", solidHeader = TRUE,
+                  selectizeInput("UNESCOCountry",
+                                 label = "Select Your Destination",
+                                 choices = sort(unique(UNESCO$Country)),
+                                 options = list(placeholder = "Type or select a country..."))
+                ),
               
-                      )
+                box(
+                  title = "UNESCO World Heritage Sites to Visit", status = "success", solidHeader = TRUE,
+                  width = 12,
+                  uiOutput("sites_table")
+                ),
+            
+                box(
+                  title = "🌍 UNESCO Sites Map", status = "warning", solidHeader = TRUE,
+                  width = 6,
+                  p("The map below shows all UNESCO World Heritage Sites. Selecting a country above will zoom the map to that country. Click any marker to see the site name and country."),
+                  leafletOutput("unesco_map", height = 550)
+                ),
+                
+                box(
+                  title = "Site Details", status = "info", solidHeader = TRUE,
+                  width = 6,
+                  p("👆 Click a site name on the left to see details and photos here."),
+                  uiOutput("site_image")
+                ),
               )
-)
+      )
+  )
 )
 )
