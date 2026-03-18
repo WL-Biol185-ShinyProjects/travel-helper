@@ -286,19 +286,6 @@ dashboardPage(
       # Travel Suggestions tab
       tabItem(tabName = "travel_suggestions",
               fluidRow(
-                 box(
-                   title = "Where Are You Going?", status = "primary", solidHeader = TRUE, 
-                   selectizeInput("UNESCOCountry", 
-                                  label = "Select Your Destination",
-                                  choices = sort(unique(UNESCO$Country)))
-                   
-                 ),
-          
-                 box(   title = "UNESCO World Heritage Sites to Visit", status = "success", solidHeader = TRUE,
-                       width = 6,
-                       uiOutput("sites_table")
-                   ),
-
                 box(
                   width = 12, status = "primary", solidHeader = TRUE,
                   title = "🗺️ Travel Suggestions",
@@ -310,37 +297,39 @@ dashboardPage(
                     tags$li("4️⃣ Click the Wikipedia link to learn even more!"),
                     tags$li("5️⃣ Explore the map below to see all UNESCO sites — click any marker for details!")
                   )
-                ),
-            
+                )
+              ),
+              fluidRow(
                 box(
                   title = "Where Are You Going?", status = "primary", solidHeader = TRUE,
                   selectizeInput("UNESCOCountry",
                                  label = "Select Your Destination",
                                  choices = sort(unique(UNESCO$Country)),
                                  options = list(placeholder = "Type or select a country..."))
-                ),
-              
+                )
+              ),
+              fluidRow(
                 box(
                   title = "UNESCO World Heritage Sites to Visit", status = "success", solidHeader = TRUE,
                   width = 12,
                   uiOutput("sites_table")
                 ),
-            
+              ),
+              fluidRow(
                 box(
                   title = "🌍 UNESCO Sites Map", status = "warning", solidHeader = TRUE,
                   width = 6,
                   p("The map below shows all UNESCO World Heritage Sites. Selecting a country above will zoom the map to that country. Click any marker to see the site name and country."),
                   leafletOutput("unesco_map", height = 550)
                 ),
-                
                 box(
                   title = "Site Details", status = "info", solidHeader = TRUE,
                   width = 6,
                   p("👆 Click a site name on the left to see details and photos here."),
                   uiOutput("site_image")
-                ),
+                )
               )
       )
+    )
   )
-)
 )
