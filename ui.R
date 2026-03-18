@@ -8,8 +8,7 @@ library(leaflet)
 # --- Data loading ---
 passport_info        <- read.csv("passport-index-tidy.csv")
 currencyVcountry     <- read.csv("currencyVcountry.csv")
-vaccinationVcountry  <- read.csv("vaccinationVcountry.csv")
-  colnames(vaccinationVcountry) <- c("Country", "Vaccination_required")  # FIX: rename columns in UI too
+
 
 
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
