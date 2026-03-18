@@ -221,7 +221,6 @@ dashboardPage(
                   verbatimTextOutput("Requirement")
                 ),
                 box(
-                  title = "Currency", status = "info", solidHeader = TRUE,
                   # FIX: renamed from "Country" to "currency_country"
                   selectizeInput("currency_country",
                   title = "Currency Info", status = "primary", solidHeader = TRUE,
