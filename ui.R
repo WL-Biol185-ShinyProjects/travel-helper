@@ -331,16 +331,7 @@ dashboardPage(
                 )
               )
       ), 
-      
-#what airport has the most delays
 
-#what airport has the most cancels 
-
-#busiest travel day of the year
-
-#what time of day results in the most cancellations 
-
-#airlines and delays/cancels 
-    )
   )
+)
 )
