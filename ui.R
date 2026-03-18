@@ -83,32 +83,8 @@ airfare_data <- airfare_data %>%
     carrier_low = recode(carrier_low, !!!carrier_names)
   )
 
-#loading in data by month
-jan <- read.csv("NJAN_T_ONTIME_MARKETING.csv")
-feb <- read.csv("NFEB_T_ONTIME_MARKETING.csv")
-march <- read.csv("NMARCHT_ONTIME_MARKETING.csv")
-april <- read.csv("APRIL_T_ONTIME_MARKETING.csv")
-may <- read.csv("MAY_T_ONTIME_MARKETING.csv")
-june <- read.csv("JUNE_T_ONTIME_MARKETING.csv")
-july <- read.csv("JULY_T_ONTIME_MARKETING.csv")
-aug <- read.csv("AUG_T_ONTIME_MARKETING.csv")
-sept <- read.csv("SEPT_T_ONTIME_MARKETING.csv")
-oct <- read.csv("OCT_T_ONTIME_MARKETING.csv")
-nov <- read.csv("NOV_T_ONTIME_MARKETING.csv")
-dec <- read.csv("DEC_T_ONTIME_MARKETING.csv")
+final_flights <- readRDS("final_flights.rds")
 
-#combining data
-new <- rbind(jan, feb)
-new <- rbind( new, march)
-new <- rbind( new, april)
-new <- rbind( new, may)
-new <- rbind( new, june)
-new <- rbind( new, july)
-new <- rbind( new, aug)
-new <- rbind( new, sept)
-new <- rbind( new, oct)
-new <- rbind( new, nov)
-final_flights <- rbind(new, dec)
 
 # --- UI ---
 
@@ -310,7 +286,6 @@ dashboardPage(
               )
       ),
 
-
       # Travel Suggestions tab
       tabItem(tabName = "travel_suggestions",
               fluidRow(
@@ -323,7 +298,7 @@ dashboardPage(
                     tags$li("2️⃣ Browse the list of UNESCO World Heritage Sites for that country"),
                     tags$li("3️⃣ Click any site name to see a photo and description"),
                     tags$li("4️⃣ Click the Wikipedia link to learn even more!"),
-                    tags$li("5️⃣ Explore the map below to see all UNESCO sites — click any marker for details!")
+                    tags$li("5️⃣ Explore the map below — click any marker for details and photos!")
                   )
                 )
               ),
@@ -334,21 +309,19 @@ dashboardPage(
                                  label = "Select Your Destination",
                                  choices = sort(unique(UNESCO$Country)),
                                  options = list(placeholder = "Type or select a country..."))
-                )
-              ),
-              fluidRow(
+                ),
                 box(
                   title = "UNESCO World Heritage Sites to Visit", status = "success", solidHeader = TRUE,
-                  width = 12,
+                  width = 6,
                   uiOutput("sites_table")
-                ),
+                )
               ),
               fluidRow(
                 box(
                   title = "🌍 UNESCO Sites Map", status = "warning", solidHeader = TRUE,
                   width = 6,
-                  p("The map below shows all UNESCO World Heritage Sites. Selecting a country above will zoom the map to that country. Click any marker to see the site name and country."),
-                  leafletOutput("unesco_map", height = 550)
+                  p("Click any marker to see site details and photos. Selecting a country above zooms the map to that country."),
+                  leafletOutput("unesco_map", height = 500)
                 ),
                 box(
                   title = "Site Details", status = "info", solidHeader = TRUE,
@@ -357,7 +330,17 @@ dashboardPage(
                   uiOutput("site_image")
                 )
               )
-      )
+      ), 
+      
+#what airport has the most delays
+
+#what airport has the most cancels 
+
+#busiest travel day of the year
+
+#what time of day results in the most cancellations 
+
+#airlines and delays/cancels 
     )
   )
 )
