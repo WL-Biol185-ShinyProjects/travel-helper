@@ -18,8 +18,6 @@ arrival_2025 <- read_excel("arrival information 2025.xlsx")
 arrival_2025 <- arrival_2025 %>% mutate(across(where(is.list), as.character))
 colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
 arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
-colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
-arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
 unesco_coords <- read_excel("UNESCO_COORDS.xlsx")
 unesco_coords <- unesco_coords[!is.na(unesco_coords$Latitude) & 
                                  !is.na(unesco_coords$Longitude), ]
@@ -77,6 +75,33 @@ v <- c(
   "-1" = "In-Country, No Visa Needed"
 )
 passport_info$Requirement <- recode(passport_info$Requirement, !!!v)
+
+#loading in data by month
+jan <- read.csv("NJAN_T_ONTIME_MARKETING.csv")
+feb <- read.csv("NFEB_T_ONTIME_MARKETING.csv")
+march <- read.csv("NMARCHT_ONTIME_MARKETING.csv")
+april <- read.csv("APRIL_T_ONTIME_MARKETING.csv")
+may <- read.csv("MAY_T_ONTIME_MARKETING.csv")
+june <- read.csv("JUNE_T_ONTIME_MARKETING.csv")
+july <- read.csv("JULY_T_ONTIME_MARKETING.csv")
+aug <- read.csv("AUG_T_ONTIME_MARKETING.csv")
+sept <- read.csv("SEPT_T_ONTIME_MARKETING.csv")
+oct <- read.csv("OCT_T_ONTIME_MARKETING.csv")
+nov <- read.csv("NOV_T_ONTIME_MARKETING.csv")
+dec <- read.csv("DEC_T_ONTIME_MARKETING.csv")
+
+#combining data
+new <- rbind(jan, feb)
+new <- rbind( new, march)
+new <- rbind( new, april)
+new <- rbind( new, may)
+new <- rbind( new, june)
+new <- rbind( new, july)
+new <- rbind( new, aug)
+new <- rbind( new, sept)
+new <- rbind( new, oct)
+new <- rbind( new, nov)
+final_flights <- rbind(new, dec)
 
 # Server
 function(input, output, session) {

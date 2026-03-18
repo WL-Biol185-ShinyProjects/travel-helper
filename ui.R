@@ -3,7 +3,6 @@ library(shinydashboard)
 library(readxl)
 library(tidyverse)
 library(dplyr)
-library(plotly)
 library(leaflet)
 
 # Data loading
@@ -13,11 +12,10 @@ vaccinationVcountry <- read.csv("vaccinationVcountry_correct.csv")
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
 arrival_2025 <- arrival_2025 %>% mutate(across(where(is.list), as.character))
 adapter_data <- read.csv("travel_adapter_converter.csv")
-colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
-arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
+  colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
+  arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
 UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
 UNESCO <- UNESCO %>% mutate(across(where(is.list), as.character))
-
 unesco_coords <- read_excel("UNESCO_COORDS.xlsx")
 unesco_coords <- unesco_coords[!is.na(unesco_coords$Latitude) & 
                                  !is.na(unesco_coords$Longitude), ]
@@ -31,25 +29,34 @@ airfare_data <- read.csv("airfare_data.csv") %>%
   )
 
 carrier_names <- c(
-  "AA" = "American Airlines", "AS" = "Alaska Airlines", "B6" = "JetBlue Airways",
-  "DL" = "Delta Air Lines", "F9" = "Frontier Airlines", "G4" = "Allegiant Air",
-  "HA" = "Hawaiian Airlines", "NK" = "Spirit Airlines", "OO" = "SkyWest Airlines",
-  "UA" = "United Airlines", "WN" = "Southwest Airlines", "YX" = "Republic Airways",
-  "YV" = "Mesa Airlines", "QX" = "Horizon Air", "SY" = "Sun Country Airlines",
-  "EV" = "ExpressJet", "CO" = "Continental Airlines", "DH" = "Independence Air",
-  "FL" = "AirTran Airways", "HP" = "America West Airlines", "NW" = "Northwest Airlines",
-  "TW" = "Trans World Airlines", "TZ" = "ATA Airlines", "US" = "US Airways",
-  "VX" = "Virgin America", "3M" = "Silver Airways", "9N" = "Trans States Airlines",
-  "A7" = "Air Midwest", "E9" = "Boston-Maine Airways", "FF" = "Tower Air",
-  "J7" = "Valujet Airlines", "JI" = "Midway Airlines", "KP" = "Kiwi International Air Lines",
-  "KW" = "Carnival Air Lines", "L4" = "Mountain Air Express", "MX" = "Mexicana",
-  "N5" = "Nolinor Aviation", "N7" = "National Airlines", "NJ" = "Vanguard Airlines",
-  "OE" = "Westair Airlines", "P9" = "Pro Air", "PN" = "Pan American Airways",
-  "QQ" = "Reno Air", "RP" = "Chautauqua Airlines", "RU" = "Cape Air",
-  "SM" = "Sunjet International", "SX" = "Skybus Airlines", "T3" = "Eastern Airways",
-  "TB" = "USAir Shuttle", "U5" = "USA 3000 Airlines", "W7" = "Western Pacific Airlines",
-  "W9" = "Aloha Airlines", "WV" = "Air South", "XP" = "Casino Express",
-  "ZA" = "Access Air", "ZW" = "Air Wisconsin"
+  "AA" = "American Airlines",   "AS" = "Alaska Airlines",
+  "B6" = "JetBlue Airways",     "DL" = "Delta Air Lines",
+  "F9" = "Frontier Airlines",   "G4" = "Allegiant Air",
+  "HA" = "Hawaiian Airlines",   "NK" = "Spirit Airlines",
+  "OO" = "SkyWest Airlines",    "UA" = "United Airlines",
+  "WN" = "Southwest Airlines",  "YX" = "Republic Airways",
+  "YV" = "Mesa Airlines",       "QX" = "Horizon Air",
+  "SY" = "Sun Country Airlines","EV" = "ExpressJet",
+  "CO" = "Continental Airlines","DH" = "Independence Air",
+  "FL" = "AirTran Airways",     "HP" = "America West Airlines",
+  "NW" = "Northwest Airlines",  "TW" = "Trans World Airlines",
+  "TZ" = "ATA Airlines",        "US" = "US Airways",
+  "VX" = "Virgin America",      "3M" = "Silver Airways",
+  "9N" = "Trans States Airlines","A7" = "Air Midwest",
+  "E9" = "Boston-Maine Airways","FF" = "Tower Air",
+  "J7" = "Valujet Airlines",    "JI" = "Midway Airlines",
+  "KP" = "Kiwi International",  "KW" = "Carnival Air Lines",
+  "L4" = "Mountain Air Express","MX" = "Mexicana",
+  "N5" = "Nolinor Aviation",    "N7" = "National Airlines",
+  "NJ" = "Vanguard Airlines",   "OE" = "Westair Airlines",
+  "P9" = "Pro Air",             "PN" = "Pan American Airways",
+  "QQ" = "Reno Air",            "RP" = "Chautauqua Airlines",
+  "RU" = "Cape Air",            "SM" = "Sunjet International",
+  "SX" = "Skybus Airlines",     "T3" = "Eastern Airways",
+  "TB" = "USAir Shuttle",       "U5" = "USA 3000 Airlines",
+  "W7" = "Western Pacific Airlines","W9" = "Aloha Airlines",
+  "WV" = "Air South",           "XP" = "Casino Express",
+  "ZA" = "Access Air",          "ZW" = "Air Wisconsin"
 )
 
 v <- c(
@@ -65,15 +72,48 @@ v <- c(
 passport_info$Requirement <- recode(passport_info$Requirement, !!!v)
 
 world_cities <- read_excel("worldcities.xlsx")
-world_cities <- world_cities %>% mutate(across(where(is.list), as.character))
-world_cities <- world_cities[!is.na(world_cities$population) & 
+world_cities <- world_cities[!is.na(world_cities$population) &
                                world_cities$population > 500000, ]
+world_cities <- world_cities %>% 
+  mutate(across(where(is.list), as.character))
 
 airfare_data <- airfare_data %>%
   mutate(
     carrier_lg  = recode(carrier_lg,  !!!carrier_names),
     carrier_low = recode(carrier_low, !!!carrier_names)
   )
+
+#loading in data by month
+jan <- read.csv("NJAN_T_ONTIME_MARKETING.csv")
+feb <- read.csv("NFEB_T_ONTIME_MARKETING.csv")
+march <- read.csv("NMARCHT_ONTIME_MARKETING.csv")
+april <- read.csv("APRIL_T_ONTIME_MARKETING.csv")
+may <- read.csv("MAY_T_ONTIME_MARKETING.csv")
+june <- read.csv("JUNE_T_ONTIME_MARKETING.csv")
+july <- read.csv("JULY_T_ONTIME_MARKETING.csv")
+aug <- read.csv("AUG_T_ONTIME_MARKETING.csv")
+sept <- read.csv("SEPT_T_ONTIME_MARKETING.csv")
+oct <- read.csv("OCT_T_ONTIME_MARKETING.csv")
+nov <- read.csv("NOV_T_ONTIME_MARKETING.csv")
+dec <- read.csv("DEC_T_ONTIME_MARKETING.csv")
+
+#combining data
+new <- rbind(jan, feb)
+new <- rbind( new, march)
+new <- rbind( new, april)
+new <- rbind( new, may)
+new <- rbind( new, june)
+new <- rbind( new, july)
+new <- rbind( new, aug)
+new <- rbind( new, sept)
+new <- rbind( new, oct)
+new <- rbind( new, nov)
+final_flights <- rbind(new, dec)
+
+# --- UI ---
+
+  # Sidebar content
+
 
 dashboardPage(
   dashboardHeader(title = "Travel Helper"),
@@ -92,8 +132,8 @@ dashboardPage(
   
   dashboardBody(
     tabItems(
-      
-      # Welcome tab
+
+      # --- Welcome tab ---
       tabItem(tabName = "welcome",
               fluidRow(
                 box(
@@ -147,8 +187,8 @@ dashboardPage(
                 )
               )
       ),
-      
-      # International Travel tab
+
+      # --- International Travel tab ---
       tabItem(tabName = "international_travel",
               fluidRow(
                 box(
@@ -171,12 +211,12 @@ dashboardPage(
                   verbatimTextOutput("Currency")
                 ),
                 box(
-                  title = "Vaccination Needed", status = "primary", solidHeader = TRUE,
-                  selectizeInput("country_vaccination",
-                                 label = "Country of Destination",
-                                 choices = vaccinationVcountry$country_vaccination),
-                  h4("Vaccination Required"),
-                  verbatimTextOutput("vaccination_required")
+                    title = "Vaccination Needed", status = "primary", solidHeader = TRUE,
+                    selectizeInput("country_vaccination",
+                                   label = "Country of Destination",
+                                   choices = vaccinationVcountry$country_vaccination),
+                    h4("Vaccination Required"),
+                    verbatimTextOutput("vaccination_required")
                 ),
                 box(
                   title = "Electrical Adapter & Converter Requirements", status = "primary", solidHeader = TRUE,
@@ -226,7 +266,7 @@ dashboardPage(
                 )
               )
       ),
-      
+
       # Airports tab
       tabItem(tabName = "airports",
               fluidRow(
@@ -235,19 +275,19 @@ dashboardPage(
                   width = 8,
                   plotOutput("percentage_on_time", height = 400)
                 ),
-                box()
+                box(width = 4)
               )
       ),
-      
-      # Airlines tab
+
+      # --- Airlines tab ---
       tabItem(tabName = "airlines",
               fluidRow(
                 box(),
                 box()
               )
       ),
-      
-      # Pricing tab
+
+      # --- Pricing tab ---
       tabItem(tabName = "pricing",
               fluidRow(
                 box(width = 4,
@@ -262,14 +302,15 @@ dashboardPage(
                     actionButton("search", "Search",
                                  class = "btn-primary", width = "100%")
                 ),
-                box(
-                  width = 8,
-                  title = "Route Information", status = "primary", solidHeader = TRUE,
-                  uiOutput("route_results")
-                )
+                box(width = 8,
+                    title = "Route Information",
+                    status = "primary",
+                    solidHeader = TRUE,
+                    uiOutput("route_results"))
               )
       ),
-      
+
+
       # Travel Suggestions tab
       tabItem(tabName = "travel_suggestions",
               fluidRow(
