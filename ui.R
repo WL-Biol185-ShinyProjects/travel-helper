@@ -17,12 +17,11 @@ colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
 arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
 UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
 UNESCO <- UNESCO %>% mutate(across(where(is.list), as.character))
-airfare_data <- read.csv("airfare_data.csv") %>%
 
 unesco_coords <- read_excel("UNESCO_COORDS.xlsx")
 unesco_coords <- unesco_coords[!is.na(unesco_coords$Latitude) & 
                                  !is.na(unesco_coords$Longitude), ]
-airfare_data <- read.csv("Consumer_Airfare_Report__Table_1_-_Top_1,000_Contiguous_State_City-Pair_Markets_20260309.csv") %>%
+airfare_data <- read.csv("airfare_data.csv") %>%
   mutate(
     fare_low = as.numeric(gsub("[$,]", "", fare_low)),
     fare_lg  = as.numeric(gsub("[$,]", "", fare_lg)),
@@ -262,18 +261,6 @@ dashboardPage(
                     uiOutput("dest_dropdown"),
                     actionButton("search", "Search",
                                  class = "btn-primary", width = "100%")
-                ),
-
-                box(
-                  width = 4,
-                  title = "Search a Route", status = "primary", solidHeader = TRUE,
-                  selectizeInput("origin",
-                                 label = "Departure City",
-                                 choices = sort(unique(airfare_data$city1)),
-                                 options = list(placeholder = "Select departure city...")),
-                  uiOutput("dest_dropdown"),
-                  actionButton("search", "Search",
-                               class = "btn-primary", width = "100%")
                 ),
                 box(
                   width = 8,
