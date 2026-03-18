@@ -16,6 +16,9 @@ vaccinationVcountry <- read.csv("vaccinationVcountry_correct.csv")
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
 colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
 arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
+unesco_coords <- read_excel("UNESCO_COORDS.xlsx")
+unesco_coords <- unesco_coords[!is.na(unesco_coords$Latitude) & 
+                                 !is.na(unesco_coords$Longitude), ]
 airfare_data <- read.csv("Consumer_Airfare_Report__Table_1_-_Top_1,000_Contiguous_State_City-Pair_Markets_20260309.csv") %>%
   mutate(
     fare_low = as.numeric(gsub("[$,]", "", fare_low)),
@@ -98,7 +101,7 @@ new <- rbind( new, nov)
 final_flights <- rbind(new, dec)
 
 # Server
-function(input, output) {
+function(input, output, session) {
   
   # Passport requirement
   output$Requirement <- renderText({
@@ -164,16 +167,176 @@ function(input, output) {
       theme_minimal()
   })
   
-  # UNESCO sites
+  # UNESCO coords
+  unesco_coords <- read_excel("UNESCO_COORDS.xlsx")
+  unesco_coords <- unesco_coords[!is.na(unesco_coords$Latitude) & 
+                                   !is.na(unesco_coords$Longitude), ]
+  
+  # UNESCO sites list
+  selected_site <- reactiveVal(NULL)
+  
   output$sites_table <- renderUI({
     req(input$UNESCOCountry)
     sites <- UNESCO[UNESCO$Country == input$UNESCOCountry, "World Heritage Site", drop = TRUE]
+    
     tagList(
       h4(paste0(input$UNESCOCountry, " (", length(sites), " sites)")),
-      tags$ul(lapply(sites, tags$li))
+      tags$ul(
+        lapply(sites, function(site) {
+          tags$li(
+            actionLink(
+              inputId = paste0("site_", gsub("[^a-zA-Z0-9]", "_", site)),
+              label = site
+            )
+          )
+        })
+      )
     )
   })
   
+  # Observe each site click
+  observe({
+    req(input$UNESCOCountry)
+    sites <- UNESCO[UNESCO$Country == input$UNESCOCountry, "World Heritage Site", drop = TRUE]
+    
+    lapply(sites, function(site) {
+      id <- paste0("site_", gsub("[^a-zA-Z0-9]", "_", site))
+      observeEvent(input[[id]], {
+        selected_site(site)
+      }, ignoreInit = TRUE)
+    })
+  })
+  
+  output$site_image <- renderUI({
+    req(selected_site())
+    
+    url <- paste0(
+      "https://en.wikipedia.org/api/rest_v1/page/summary/",
+      URLencode(selected_site())
+    )
+    
+    response <- tryCatch(GET(url), error = function(e) NULL)
+    
+    if (!is.null(response) && status_code(response) == 200) {
+      data <- fromJSON(content(response, "text", encoding = "UTF-8"))
+      img_url <- data$thumbnail$source
+      description <- data$extract
+      wiki_url <- data$content_urls$desktop$page
+      
+      tagList(
+        br(),
+        h4(selected_site()),
+        if (!is.null(img_url)) {
+          tags$img(src = img_url, width = "100%",
+                   style = "border-radius: 8px; margin-bottom: 10px;")
+        },
+        p(description),
+        tags$a(href = wiki_url, target = "_blank", "📖 Read more on Wikipedia")
+      )
+    } else {
+      p("No image available for this site.")
+    }
+  })
+  
+  # UNESCO map - initial render
+  output$unesco_map <- renderLeaflet({
+    leaflet(unesco_coords) %>%
+      addProviderTiles(providers$CartoDB.Positron) %>%
+      setView(lng = 0, lat = 20, zoom = 2) %>%
+      addMarkers(
+        lng = ~Longitude,
+        lat = ~Latitude,
+        layerId = ~`World Heritage Site`,
+        label = ~`World Heritage Site`,
+        clusterOptions = markerClusterOptions()
+      )
+  })
+  
+  # Zoom map when country selected
+  observeEvent(input$UNESCOCountry, {
+    req(input$UNESCOCountry)
+    
+    filtered <- unesco_coords[unesco_coords$Country == input$UNESCOCountry, ]
+    
+    if (nrow(filtered) > 0) {
+      avg_lat <- mean(filtered$Latitude, na.rm = TRUE)
+      avg_lng <- mean(filtered$Longitude, na.rm = TRUE)
+      
+      leafletProxy("unesco_map") %>%
+        clearMarkers() %>%
+        clearMarkerClusters() %>%
+        clearPopups() %>%
+        addMarkers(
+          data = filtered,
+          lng = ~Longitude,
+          lat = ~Latitude,
+          layerId = ~`World Heritage Site`,
+          label = ~`World Heritage Site`,
+          clusterOptions = markerClusterOptions()
+        ) %>%
+        setView(lng = avg_lng, lat = avg_lat, zoom = 5)
+    }
+  }, ignoreInit = TRUE)
+  
+  # When marker clicked fetch image and show popup inside map
+  observeEvent(input$unesco_map_marker_click, {
+    click <- input$unesco_map_marker_click
+    req(click$id)
+    
+    site_name <- click$id
+    lat <- click$lat
+    lng <- click$lng
+    
+    country_row <- unesco_coords[unesco_coords$`World Heritage Site` == site_name, ]
+    country <- as.character(country_row$Country[1])
+    
+    gmaps_url <- paste0("https://www.google.com/maps?q=", lat, ",", lng)
+    
+    wiki_url <- paste0(
+      "https://en.wikipedia.org/api/rest_v1/page/summary/",
+      URLencode(site_name)
+    )
+    
+    img_tag <- ""
+    desc_tag <- ""
+    
+    tryCatch({
+      resp <- GET(wiki_url)
+      if (status_code(resp) == 200) {
+        wiki_data <- fromJSON(content(resp, "text", encoding = "UTF-8"))
+        if (!is.null(wiki_data$thumbnail$source)) {
+          img_tag <- paste0(
+            "<img src='", wiki_data$thumbnail$source,
+            "' width='260px' style='border-radius:6px; margin:6px 0; display:block'>"
+          )
+        }
+        if (!is.null(wiki_data$extract)) {
+          desc <- substr(wiki_data$extract, 1, 200)
+          desc_tag <- paste0("<p style='font-size:11px; margin:6px 0'>", desc, "...</p>")
+        }
+      }
+    }, error = function(e) {})
+    
+    popup_content <- paste0(
+      "<div style='width:270px'>",
+      img_tag,
+      "<b style='font-size:13px'>", site_name, "</b><br>",
+      "<span style='color:#666'>🌍 ", country, "</span><br>",
+      desc_tag,
+      "<a href='", gmaps_url, "' target='_blank'>📍 Open in Google Maps</a>&nbsp;&nbsp;",
+      "<a href='https://en.wikipedia.org/wiki/", URLencode(site_name),
+      "' target='_blank'>📖 Wikipedia</a>",
+      "</div>"
+    )
+    
+    leafletProxy("unesco_map") %>%
+      clearPopups() %>%
+      addPopups(
+        lng = lng,
+        lat = lat,
+        popup = popup_content
+      )
+  })
   # Airfare - destination dropdown
   output$dest_dropdown <- renderUI({
     req(input$origin)

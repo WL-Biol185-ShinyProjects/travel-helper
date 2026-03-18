@@ -31,6 +31,10 @@ colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
   arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
 UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
 
+unesco_coords <- read_excel("UNESCO_COORDS.xlsx")
+unesco_coords <- unesco_coords[!is.na(unesco_coords$Latitude) & 
+                                 !is.na(unesco_coords$Longitude), ]
+
 airfare_data <- read.csv("Consumer_Airfare_Report__Table_1_-_Top_1,000_Contiguous_State_City-Pair_Markets_20260309.csv") %>%
   mutate(
     fare_low = as.numeric(gsub("[$,]", "", fare_low)),
@@ -350,27 +354,55 @@ dashboardPage(
 
 
       # Travel Suggestions tab
-
       tabItem(tabName = "travel_suggestions",
+              fluidRow(
+                box(
+                  width = 12, status = "primary", solidHeader = TRUE,
+                  title = "🗺️ Travel Suggestions",
+                  p("Discover UNESCO World Heritage Sites around the world!"),
+                  tags$ul(
+                    tags$li("1️⃣ Select a country from the dropdown below"),
+                    tags$li("2️⃣ Browse the list of UNESCO World Heritage Sites for that country"),
+                    tags$li("3️⃣ Click any site name to see a photo and description"),
+                    tags$li("4️⃣ Click the Wikipedia link to learn even more!"),
+                    tags$li("5️⃣ Explore the map below to see all UNESCO sites — click any marker for details!")
+                  )
+                )
+              ),
               fluidRow(
                 box(
                   title = "Where Are You Going?", status = "primary", solidHeader = TRUE,
                   selectizeInput("UNESCOCountry",
                                  label = "Select Your Destination",
-                                 choices = sort(unique(UNESCO$Country)))
+                                 choices = sort(unique(UNESCO$Country)),
+                                 options = list(placeholder = "Type or select a country..."))
+                )
+              ),
+              fluidRow(
+                box(
+                  title = "UNESCO World Heritage Sites to Visit", status = "success", solidHeader = TRUE,
+                  width = 12,
+                  uiOutput("sites_table")
                 ),
-                box(   title = "UNESCO World Heritage Sites to Visit", status = "success", solidHeader = TRUE,
-                       width = 6,
-                       uiOutput("sites_table")
+              ),
+              fluidRow(
+                box(
+                  title = "🌍 UNESCO Sites Map", status = "warning", solidHeader = TRUE,
+                  width = 6,
+                  p("The map below shows all UNESCO World Heritage Sites. Selecting a country above will zoom the map to that country. Click any marker to see the site name and country."),
+                  leafletOutput("unesco_map", height = 550)
+                ),
+                box(
+                  title = "Site Details", status = "info", solidHeader = TRUE,
+                  width = 6,
+                  p("👆 Click a site name on the left to see details and photos here."),
+                  uiOutput("site_image")
                 )
               )
       )
 
-#last three parentheses green, orange, pink
-    )
+#Last three parentheses: green, orange, pink 
+      
 )
 )
-
-
-              
-               
+)
