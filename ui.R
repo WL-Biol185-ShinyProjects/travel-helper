@@ -12,8 +12,8 @@ vaccinationVcountry <- read.csv("vaccinationVcountry_correct.csv")
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
 arrival_2025 <- arrival_2025 %>% mutate(across(where(is.list), as.character))
 adapter_data <- read.csv("travel_adapter_converter.csv")
-  colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
-  arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
+colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
+arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
 UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
 UNESCO <- UNESCO %>% mutate(across(where(is.list), as.character))
 unesco_coords <- read_excel("UNESCO_COORDS.xlsx")
@@ -74,46 +74,13 @@ passport_info$Requirement <- recode(passport_info$Requirement, !!!v)
 world_cities <- read_excel("worldcities.xlsx")
 world_cities <- world_cities[!is.na(world_cities$population) &
                                world_cities$population > 500000, ]
-world_cities <- world_cities %>% 
-  mutate(across(where(is.list), as.character))
+world_cities <- world_cities %>% mutate(across(where(is.list), as.character))
 
 airfare_data <- airfare_data %>%
   mutate(
     carrier_lg  = recode(carrier_lg,  !!!carrier_names),
     carrier_low = recode(carrier_low, !!!carrier_names)
   )
-
-#loading in data by month
-jan <- read.csv("NJAN_T_ONTIME_MARKETING.csv")
-feb <- read.csv("NFEB_T_ONTIME_MARKETING.csv")
-march <- read.csv("NMARCHT_ONTIME_MARKETING.csv")
-april <- read.csv("APRIL_T_ONTIME_MARKETING.csv")
-may <- read.csv("MAY_T_ONTIME_MARKETING.csv")
-june <- read.csv("JUNE_T_ONTIME_MARKETING.csv")
-july <- read.csv("JULY_T_ONTIME_MARKETING.csv")
-aug <- read.csv("AUG_T_ONTIME_MARKETING.csv")
-sept <- read.csv("SEPT_T_ONTIME_MARKETING.csv")
-oct <- read.csv("OCT_T_ONTIME_MARKETING.csv")
-nov <- read.csv("NOV_T_ONTIME_MARKETING.csv")
-dec <- read.csv("DEC_T_ONTIME_MARKETING.csv")
-
-#combining data
-new <- rbind(jan, feb)
-new <- rbind( new, march)
-new <- rbind( new, april)
-new <- rbind( new, may)
-new <- rbind( new, june)
-new <- rbind( new, july)
-new <- rbind( new, aug)
-new <- rbind( new, sept)
-new <- rbind( new, oct)
-new <- rbind( new, nov)
-final_flights <- rbind(new, dec)
-
-# --- UI ---
-
-  # Sidebar content
-
 
 dashboardPage(
   dashboardHeader(title = "Travel Helper"),
@@ -132,8 +99,8 @@ dashboardPage(
   
   dashboardBody(
     tabItems(
-
-      # --- Welcome tab ---
+      
+      # Welcome tab
       tabItem(tabName = "welcome",
               fluidRow(
                 box(
@@ -151,8 +118,9 @@ dashboardPage(
                     tags$li("💰 Pricing — Compare travel pricing"),
                     tags$li("🗺️ Travel Suggestions — Discover UNESCO World Heritage Sites to visit")
                   )
-                ),
-                
+                )
+              ),
+              fluidRow(
                 box(
                   width = 6, status = "info", solidHeader = TRUE,
                   title = "💡 Travel Tips",
@@ -172,7 +140,6 @@ dashboardPage(
                   tags$a(href = "https://step.state.gov", target = "_blank",
                          "👉 Enroll in STEP at step.state.gov")
                 ),
-                
                 box(
                   width = 6, status = "warning", solidHeader = TRUE,
                   title = "📋 Trip Planning Checklist",
@@ -187,8 +154,8 @@ dashboardPage(
                 )
               )
       ),
-
-      # --- International Travel tab ---
+      
+      # International Travel tab
       tabItem(tabName = "international_travel",
               fluidRow(
                 box(
@@ -211,12 +178,12 @@ dashboardPage(
                   verbatimTextOutput("Currency")
                 ),
                 box(
-                    title = "Vaccination Needed", status = "primary", solidHeader = TRUE,
-                    selectizeInput("country_vaccination",
-                                   label = "Country of Destination",
-                                   choices = vaccinationVcountry$country_vaccination),
-                    h4("Vaccination Required"),
-                    verbatimTextOutput("vaccination_required")
+                  title = "Vaccination Needed", status = "primary", solidHeader = TRUE,
+                  selectizeInput("country_vaccination",
+                                 label = "Country of Destination",
+                                 choices = vaccinationVcountry$country_vaccination),
+                  h4("Vaccination Required"),
+                  verbatimTextOutput("vaccination_required")
                 ),
                 box(
                   title = "Electrical Adapter & Converter Requirements", status = "primary", solidHeader = TRUE,
@@ -248,8 +215,9 @@ dashboardPage(
                   title = "🌤️ World Weather",
                   p("Use the dropdowns to jump to a country and city, or browse the map and click any city marker to get the current conditions and 7-day forecast."),
                   p("🔍 Cities are clustered — zoom in to see individual city markers, then click to get weather.")
-                ),
-                
+                )
+              ),
+              fluidRow(
                 box(
                   width = 4, status = "info", solidHeader = TRUE,
                   title = "Jump to a Location",
@@ -257,8 +225,9 @@ dashboardPage(
                                  choices = c("", sort(unique(as.character(world_cities$country)))),
                                  options = list(placeholder = "Type or select a country...")),
                   uiOutput("city_selector")
-                ),
-                
+                )
+              ),
+              fluidRow(
                 box(
                   width = 12, status = "success", solidHeader = TRUE,
                   title = "🗺️ Click a City for Weather",
@@ -266,7 +235,7 @@ dashboardPage(
                 )
               )
       ),
-
+      
       # Airports tab
       tabItem(tabName = "airports",
               fluidRow(
@@ -278,39 +247,37 @@ dashboardPage(
                 box(width = 4)
               )
       ),
-
-      # --- Airlines tab ---
+      
+      # Airlines tab
       tabItem(tabName = "airlines",
               fluidRow(
                 box(),
                 box()
               )
       ),
-
-      # --- Pricing tab ---
+      
+      # Pricing tab
       tabItem(tabName = "pricing",
               fluidRow(
-                box(width = 4,
-                    title = "Search a Route",
-                    status = "primary",
-                    solidHeader = TRUE,
-                    selectizeInput("origin",
-                                   label = "Departure City",
-                                   choices = sort(unique(as.character(airfare_data$city1))),
-                                   options = list(placeholder = "Select departure city...")),
-                    uiOutput("dest_dropdown"),
-                    actionButton("search", "Search",
-                                 class = "btn-primary", width = "100%")
+                box(
+                  width = 4,
+                  title = "Search a Route", status = "primary", solidHeader = TRUE,
+                  selectizeInput("origin",
+                                 label = "Departure City",
+                                 choices = sort(unique(as.character(airfare_data$city1))),
+                                 options = list(placeholder = "Select departure city...")),
+                  uiOutput("dest_dropdown"),
+                  actionButton("search", "Search",
+                               class = "btn-primary", width = "100%")
                 ),
-                box(width = 8,
-                    title = "Route Information",
-                    status = "primary",
-                    solidHeader = TRUE,
-                    uiOutput("route_results"))
+                box(
+                  width = 8,
+                  title = "Route Information", status = "primary", solidHeader = TRUE,
+                  uiOutput("route_results")
+                )
               )
       ),
-
-
+      
       # Travel Suggestions tab
       tabItem(tabName = "travel_suggestions",
               fluidRow(
@@ -323,7 +290,7 @@ dashboardPage(
                     tags$li("2️⃣ Browse the list of UNESCO World Heritage Sites for that country"),
                     tags$li("3️⃣ Click any site name to see a photo and description"),
                     tags$li("4️⃣ Click the Wikipedia link to learn even more!"),
-                    tags$li("5️⃣ Explore the map below to see all UNESCO sites — click any marker for details!")
+                    tags$li("5️⃣ Explore the map below — click any marker for details and photos!")
                   )
                 )
               ),
@@ -334,21 +301,19 @@ dashboardPage(
                                  label = "Select Your Destination",
                                  choices = sort(unique(UNESCO$Country)),
                                  options = list(placeholder = "Type or select a country..."))
-                )
-              ),
-              fluidRow(
+                ),
                 box(
                   title = "UNESCO World Heritage Sites to Visit", status = "success", solidHeader = TRUE,
-                  width = 12,
+                  width = 6,
                   uiOutput("sites_table")
-                ),
+                )
               ),
               fluidRow(
                 box(
                   title = "🌍 UNESCO Sites Map", status = "warning", solidHeader = TRUE,
                   width = 6,
-                  p("The map below shows all UNESCO World Heritage Sites. Selecting a country above will zoom the map to that country. Click any marker to see the site name and country."),
-                  leafletOutput("unesco_map", height = 550)
+                  p("Click any marker to see site details and photos. Selecting a country above zooms the map to that country."),
+                  leafletOutput("unesco_map", height = 500)
                 ),
                 box(
                   title = "Site Details", status = "info", solidHeader = TRUE,
