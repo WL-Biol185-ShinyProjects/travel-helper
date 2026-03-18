@@ -76,32 +76,7 @@ v <- c(
 )
 passport_info$Requirement <- recode(passport_info$Requirement, !!!v)
 
-#loading in data by month
-jan <- read.csv("NJAN_T_ONTIME_MARKETING.csv")
-feb <- read.csv("NFEB_T_ONTIME_MARKETING.csv")
-march <- read.csv("NMARCHT_ONTIME_MARKETING.csv")
-april <- read.csv("APRIL_T_ONTIME_MARKETING.csv")
-may <- read.csv("MAY_T_ONTIME_MARKETING.csv")
-june <- read.csv("JUNE_T_ONTIME_MARKETING.csv")
-july <- read.csv("JULY_T_ONTIME_MARKETING.csv")
-aug <- read.csv("AUG_T_ONTIME_MARKETING.csv")
-sept <- read.csv("SEPT_T_ONTIME_MARKETING.csv")
-oct <- read.csv("OCT_T_ONTIME_MARKETING.csv")
-nov <- read.csv("NOV_T_ONTIME_MARKETING.csv")
-dec <- read.csv("DEC_T_ONTIME_MARKETING.csv")
-
-#combining data
-new <- rbind(jan, feb)
-new <- rbind( new, march)
-new <- rbind( new, april)
-new <- rbind( new, may)
-new <- rbind( new, june)
-new <- rbind( new, july)
-new <- rbind( new, aug)
-new <- rbind( new, sept)
-new <- rbind( new, oct)
-new <- rbind( new, nov)
-final_flights <- rbind(new, dec)
+final_flights <- readRDS("final_flights.rds")
 
 # Server
 function(input, output, session) {
@@ -519,6 +494,6 @@ function(input, output, session) {
       addPopups(lng = lon, lat = lat, popup = popup_text)
   })
   
-
-  }
+  
+}
 

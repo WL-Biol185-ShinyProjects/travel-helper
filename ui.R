@@ -12,8 +12,8 @@ vaccinationVcountry <- read.csv("vaccinationVcountry_correct.csv")
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
 arrival_2025 <- arrival_2025 %>% mutate(across(where(is.list), as.character))
 adapter_data <- read.csv("travel_adapter_converter.csv")
-  colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
-  arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
+colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
+arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
 UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
 UNESCO <- UNESCO %>% mutate(across(where(is.list), as.character))
 unesco_coords <- read_excel("UNESCO_COORDS.xlsx")
@@ -83,36 +83,12 @@ airfare_data <- airfare_data %>%
     carrier_low = recode(carrier_low, !!!carrier_names)
   )
 
-#loading in data by month
-jan <- read.csv("NJAN_T_ONTIME_MARKETING.csv")
-feb <- read.csv("NFEB_T_ONTIME_MARKETING.csv")
-march <- read.csv("NMARCHT_ONTIME_MARKETING.csv")
-april <- read.csv("APRIL_T_ONTIME_MARKETING.csv")
-may <- read.csv("MAY_T_ONTIME_MARKETING.csv")
-june <- read.csv("JUNE_T_ONTIME_MARKETING.csv")
-july <- read.csv("JULY_T_ONTIME_MARKETING.csv")
-aug <- read.csv("AUG_T_ONTIME_MARKETING.csv")
-sept <- read.csv("SEPT_T_ONTIME_MARKETING.csv")
-oct <- read.csv("OCT_T_ONTIME_MARKETING.csv")
-nov <- read.csv("NOV_T_ONTIME_MARKETING.csv")
-dec <- read.csv("DEC_T_ONTIME_MARKETING.csv")
+final_flights <- readRDS("final_flights.rds")
 
-#combining data
-new <- rbind(jan, feb)
-new <- rbind( new, march)
-new <- rbind( new, april)
-new <- rbind( new, may)
-new <- rbind( new, june)
-new <- rbind( new, july)
-new <- rbind( new, aug)
-new <- rbind( new, sept)
-new <- rbind( new, oct)
-new <- rbind( new, nov)
-final_flights <- rbind(new, dec)
 
 # --- UI ---
 
-  # Sidebar content
+# Sidebar content
 
 
 dashboardPage(
@@ -132,7 +108,7 @@ dashboardPage(
   
   dashboardBody(
     tabItems(
-
+      
       # --- Welcome tab ---
       tabItem(tabName = "welcome",
               fluidRow(
@@ -187,7 +163,7 @@ dashboardPage(
                 )
               )
       ),
-
+      
       # --- International Travel tab ---
       tabItem(tabName = "international_travel",
               fluidRow(
@@ -211,12 +187,12 @@ dashboardPage(
                   verbatimTextOutput("Currency")
                 ),
                 box(
-                    title = "Vaccination Needed", status = "primary", solidHeader = TRUE,
-                    selectizeInput("country_vaccination",
-                                   label = "Country of Destination",
-                                   choices = vaccinationVcountry$country_vaccination),
-                    h4("Vaccination Required"),
-                    verbatimTextOutput("vaccination_required")
+                  title = "Vaccination Needed", status = "primary", solidHeader = TRUE,
+                  selectizeInput("country_vaccination",
+                                 label = "Country of Destination",
+                                 choices = vaccinationVcountry$country_vaccination),
+                  h4("Vaccination Required"),
+                  verbatimTextOutput("vaccination_required")
                 ),
                 box(
                   title = "Electrical Adapter & Converter Requirements", status = "primary", solidHeader = TRUE,
@@ -266,7 +242,7 @@ dashboardPage(
                 )
               )
       ),
-
+      
       # Airports tab
       tabItem(tabName = "airports",
               fluidRow(
@@ -278,7 +254,7 @@ dashboardPage(
                 box(width = 4)
               )
       ),
-
+      
       # --- Airlines tab ---
       tabItem(tabName = "airlines",
               fluidRow(
@@ -286,7 +262,7 @@ dashboardPage(
                 box()
               )
       ),
-
+      
       # --- Pricing tab ---
       tabItem(tabName = "pricing",
               fluidRow(
@@ -309,8 +285,8 @@ dashboardPage(
                     uiOutput("route_results"))
               )
       ),
-
-
+      
+      
       # Travel Suggestions tab
       tabItem(tabName = "travel_suggestions",
               fluidRow(
