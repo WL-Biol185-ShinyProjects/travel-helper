@@ -82,6 +82,13 @@ airfare_data <- airfare_data %>%
     carrier_low = recode(carrier_low, !!!carrier_names)
   )
 
+final_flights <- readRDS("final_flights.rds")
+
+
+# --- UI ---
+
+  # Sidebar content
+
 dashboardPage(
   dashboardHeader(title = "Travel Helper"),
   
@@ -277,7 +284,7 @@ dashboardPage(
                 )
               )
       ),
-      
+
       # Travel Suggestions tab
       tabItem(tabName = "travel_suggestions",
               fluidRow(
@@ -322,7 +329,8 @@ dashboardPage(
                   uiOutput("site_image")
                 )
               )
-      )
+      ) 
+      
     )
   )
 )

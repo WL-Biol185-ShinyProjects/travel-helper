@@ -84,21 +84,8 @@ v <- c(
 )
 passport_info$Requirement <- recode(passport_info$Requirement, !!!v)
 
-jan   <- read.csv("NJAN_T_ONTIME_MARKETING.csv")
-feb   <- read.csv("NFEB_T_ONTIME_MARKETING.csv")
-march <- read.csv("NMARCHT_ONTIME_MARKETING.csv")
-april <- read.csv("APRIL_T_ONTIME_MARKETING.csv")
-may   <- read.csv("MAY_T_ONTIME_MARKETING.csv")
-june  <- read.csv("JUNE_T_ONTIME_MARKETING.csv")
-july  <- read.csv("JULY_T_ONTIME_MARKETING.csv")
-aug   <- read.csv("AUG_T_ONTIME_MARKETING.csv")
-sept  <- read.csv("SEPT_T_ONTIME_MARKETING.csv")
-oct   <- read.csv("OCT_T_ONTIME_MARKETING.csv")
-nov   <- read.csv("NOV_T_ONTIME_MARKETING.csv")
-dec   <- read.csv("DEC_T_ONTIME_MARKETING.csv")
+final_flights <- readRDS("final_flights.rds")
 
-final_flights <- rbind(jan, feb, march, april, may, june,
-                       july, aug, sept, oct, nov, dec)
 
 # Server
 function(input, output, session) {
