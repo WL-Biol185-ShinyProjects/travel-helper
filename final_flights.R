@@ -25,4 +25,7 @@ final_flights <- rbind(new, dec)
 
 saveRDS(final_flights, file = "final_flights.rds")
 
+<<<<<<< HEAD
+=======
 
+>>>>>>> 734bd75ec0ca6a125c2c6f131df08103ee4d1f4c

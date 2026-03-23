@@ -494,6 +494,6 @@ function(input, output, session) {
       addPopups(lng = lon, lat = lat, popup = popup_text)
   })
   
-
-  }
+  
+}
 

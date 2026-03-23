@@ -12,8 +12,8 @@ vaccinationVcountry <- read.csv("vaccinationVcountry_correct.csv")
 arrival_2025 <- read_excel("arrival information 2025.xlsx")
 arrival_2025 <- arrival_2025 %>% mutate(across(where(is.list), as.character))
 adapter_data <- read.csv("travel_adapter_converter.csv")
-  colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
-  arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
+colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
+arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
 UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
 UNESCO <- UNESCO %>% mutate(across(where(is.list), as.character))
 unesco_coords <- read_excel("UNESCO_COORDS.xlsx")
@@ -88,7 +88,7 @@ final_flights <- readRDS("final_flights.rds")
 
 # --- UI ---
 
-  # Sidebar content
+# Sidebar content
 
 
 dashboardPage(
@@ -108,7 +108,7 @@ dashboardPage(
   
   dashboardBody(
     tabItems(
-
+      
       # --- Welcome tab ---
       tabItem(tabName = "welcome",
               fluidRow(
@@ -163,7 +163,7 @@ dashboardPage(
                 )
               )
       ),
-
+      
       # --- International Travel tab ---
       tabItem(tabName = "international_travel",
               fluidRow(
@@ -187,12 +187,12 @@ dashboardPage(
                   verbatimTextOutput("Currency")
                 ),
                 box(
-                    title = "Vaccination Needed", status = "primary", solidHeader = TRUE,
-                    selectizeInput("country_vaccination",
-                                   label = "Country of Destination",
-                                   choices = vaccinationVcountry$country_vaccination),
-                    h4("Vaccination Required"),
-                    verbatimTextOutput("vaccination_required")
+                  title = "Vaccination Needed", status = "primary", solidHeader = TRUE,
+                  selectizeInput("country_vaccination",
+                                 label = "Country of Destination",
+                                 choices = vaccinationVcountry$country_vaccination),
+                  h4("Vaccination Required"),
+                  verbatimTextOutput("vaccination_required")
                 ),
                 box(
                   title = "Electrical Adapter & Converter Requirements", status = "primary", solidHeader = TRUE,
@@ -242,7 +242,7 @@ dashboardPage(
                 )
               )
       ),
-
+      
       # Airports tab
       tabItem(tabName = "airports",
               fluidRow(
@@ -254,7 +254,7 @@ dashboardPage(
                 box(width = 4)
               )
       ),
-
+      
       # --- Airlines tab ---
       tabItem(tabName = "airlines",
               fluidRow(
@@ -262,7 +262,7 @@ dashboardPage(
                 box()
               )
       ),
-
+      
       # --- Pricing tab ---
       tabItem(tabName = "pricing",
               fluidRow(
@@ -330,7 +330,7 @@ dashboardPage(
                   uiOutput("site_image")
                 )
               )
-      ), 
+      ) 
 
   )
 )
