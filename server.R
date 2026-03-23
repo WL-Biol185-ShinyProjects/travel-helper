@@ -10,7 +10,7 @@ library(leaflet)
 # Data loading
 UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
 UNESCO <- UNESCO %>% mutate(across(where(is.list), as.character))
-passport_info <- read.csv("passport-index-tidy.csv") 
+passport_info <- read.csv("passport-index-tidy.csv")
 currencyVcountry <- read.csv("currencyVcountry.csv")
 adapter_data <- read.csv("travel_adapter_converter.csv")
 vaccinationVcountry <- read.csv("vaccinationVcountry_correct.csv")
@@ -20,7 +20,7 @@ colnames(arrival_2025) <- c("rank", "airport", "pct_on_time")
 arrival_2025$airport <- reorder(arrival_2025$airport, arrival_2025$pct_on_time)
 
 unesco_coords <- read_excel("UNESCO_COORDS.xlsx")
-unesco_coords <- unesco_coords[!is.na(unesco_coords$Latitude) & 
+unesco_coords <- unesco_coords[!is.na(unesco_coords$Latitude) &
                                  !is.na(unesco_coords$Longitude), ]
 unesco_coords$Latitude  <- as.numeric(unesco_coords$Latitude)
 unesco_coords$Longitude <- as.numeric(unesco_coords$Longitude)
@@ -66,7 +66,7 @@ capitals <- read_excel("Capitals.xlsx")
 
 world_cities <- read_excel("worldcities.xlsx")
 world_cities <- world_cities %>% mutate(across(where(is.list), as.character))
-world_cities <- world_cities[!is.na(world_cities$population) & 
+world_cities <- world_cities[!is.na(world_cities$population) &
                                world_cities$population > 500000, ]
 world_cities$lat <- as.numeric(world_cities$lat)
 world_cities$lng <- as.numeric(world_cities$lng)
@@ -90,24 +90,24 @@ final_flights <- readRDS("final_flights.rds")
 # Server
 function(input, output, session) {
   
-  # Passport requirement
+  # --- Passport requirement ---
   output$Requirement <- renderText({
-    result <- passport_info %>% 
-      filter(Passport == input$Passport, Destination == input$Destination) 
+    result <- passport_info %>%
+      filter(Passport == input$Passport, Destination == input$Destination)
     if (nrow(result) > 0) result$Requirement[1] else "No information available"
   })
   
-  # Currency
+  # --- Currency ---
   output$Currency <- renderText({
     currencyVcountry[currencyVcountry$Country == input$Country, "Currency"]
   })
   
-  # Vaccinations
+  # --- Vaccinations ---
   output$vaccination_required <- renderText({
     vaccinationVcountry[vaccinationVcountry$country_vaccination == input$country_vaccination, "vaccination_required"]
   })
   
-  # Adapter
+  # --- Adapter ---
   adapter_result <- reactive({
     req(input$origin_country, input$dest_country)
     adapter_data %>%
@@ -135,7 +135,7 @@ function(input, output, session) {
     adapter_result()$Converter.Recommendation
   })
   
-  # Airports chart
+  # --- Airports chart ---
   output$percentage_on_time <- renderPlot({
     ggplot(arrival_2025, aes(x = airport, y = pct_on_time, fill = pct_on_time)) +
       geom_col() +
@@ -150,7 +150,7 @@ function(input, output, session) {
       theme_minimal()
   })
   
-  # Airfare - destination dropdown
+  # --- Airfare: destination dropdown ---
   output$dest_dropdown <- renderUI({
     req(input$origin)
     destinations <- airfare_data %>%
@@ -165,7 +165,7 @@ function(input, output, session) {
                    options = list(placeholder = "Select destination city..."))
   })
   
-  # Airfare - route search
+  # --- Airfare: route search ---
   route_data <- eventReactive(input$search, {
     req(input$origin, input$dest)
     airfare_data %>%
@@ -174,18 +174,18 @@ function(input, output, session) {
       slice(1)
   })
   
-  # Airfare - display results
+  # --- Airfare: display results ---
   output$route_results <- renderUI({
     req(route_data())
     df <- route_data()
     if (nrow(df) == 0) return(p("No data found for this route."))
     tagList(
-      h4(paste(as.character(df$city1), "→", as.character(df$city2))),
+      h4(paste(as.character(df$city1), "->", as.character(df$city2))),
       br(),
       fluidRow(
         column(6,
                wellPanel(
-                 h4("✈ Largest Carrier"),
+                 h4("Largest Carrier"),
                  h2(as.character(df$carrier_lg)),
                  p(paste("Market share:", round(as.numeric(df$large_ms) * 100, 1), "%")),
                  p(paste("Avg fare: $", as.character(df$fare_lg)))
@@ -193,7 +193,7 @@ function(input, output, session) {
         ),
         column(6,
                wellPanel(
-                 h4("💰 Cheapest Carrier"),
+                 h4("Cheapest Carrier"),
                  h2(as.character(df$carrier_low)),
                  p(paste("Market share:", round(as.numeric(df$lf_ms) * 100, 1), "%")),
                  p(paste("Avg fare: $", as.character(df$fare_low)))
@@ -206,7 +206,7 @@ function(input, output, session) {
     )
   })
   
-  # Weather map - initial render
+  # --- Weather map: initial render ---
   output$weather_map <- renderLeaflet({
     leaflet(world_cities) %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
@@ -220,7 +220,15 @@ function(input, output, session) {
       )
   })
   
-  # Render city dropdown based on selected country
+  # --- Weather map: redraw when tab activated (fixes grey box) ---
+  observeEvent(input$tabs, {
+    if (!is.null(input$tabs) && input$tabs == "weather") {
+      leafletProxy("weather_map") %>%
+        setView(lng = 0, lat = 20, zoom = 2)
+    }
+  })
+  
+  # --- Weather: city dropdown ---
   output$city_selector <- renderUI({
     req(input$weather_country)
     cities <- world_cities[world_cities$country == input$weather_country, ]
@@ -229,7 +237,7 @@ function(input, output, session) {
                    options = list(placeholder = "Type or select a city..."))
   })
   
-  # Fly to country when dropdown selected
+  # --- Weather: fly to country ---
   observeEvent(input$weather_country, {
     req(input$weather_country)
     country_cities <- world_cities[world_cities$country == input$weather_country, ]
@@ -241,10 +249,10 @@ function(input, output, session) {
     }
   })
   
-  # Fly to city when selected
+  # --- Weather: fly to city ---
   observeEvent(input$weather_city, {
     req(input$weather_city)
-    row <- world_cities[world_cities$city == input$weather_city & 
+    row <- world_cities[world_cities$city == input$weather_city &
                           world_cities$country == input$weather_country, ]
     if (nrow(row) > 0) {
       leafletProxy("weather_map") %>%
@@ -252,7 +260,7 @@ function(input, output, session) {
     }
   })
   
-  # When a city marker is clicked fetch and display weather
+  # --- Weather: marker click ---
   observeEvent(input$weather_map_marker_click, {
     click <- input$weather_map_marker_click
     row <- world_cities[world_cities$id == click$id, ]
@@ -278,13 +286,13 @@ function(input, output, session) {
     forecast <- as.data.frame(data$daily)
     
     weather_description <- case_when(
-      weather$weathercode == 0        ~ "Clear sky ☀️",
-      weather$weathercode %in% 1:3   ~ "Partly cloudy ⛅",
-      weather$weathercode %in% 45:48 ~ "Foggy 🌫️",
-      weather$weathercode %in% 51:67 ~ "Rainy 🌧️",
-      weather$weathercode %in% 71:77 ~ "Snowy ❄️",
-      weather$weathercode %in% 80:82 ~ "Rain showers 🌦️",
-      weather$weathercode %in% 95:99 ~ "Thunderstorm ⛈️",
+      weather$weathercode == 0        ~ "Clear sky",
+      weather$weathercode %in% 1:3   ~ "Partly cloudy",
+      weather$weathercode %in% 45:48 ~ "Foggy",
+      weather$weathercode %in% 51:67 ~ "Rainy",
+      weather$weathercode %in% 71:77 ~ "Snowy",
+      weather$weathercode %in% 80:82 ~ "Rain showers",
+      weather$weathercode %in% 95:99 ~ "Thunderstorm",
       TRUE ~ "Unknown"
     )
     
@@ -293,8 +301,8 @@ function(input, output, session) {
         paste0(
           "<tr>",
           "<td style='padding:3px 8px'>", forecast$time[i], "</td>",
-          "<td style='padding:3px 8px'>", forecast$temperature_2m_max[i], "°F / ",
-          forecast$temperature_2m_min[i], "°F</td>",
+          "<td style='padding:3px 8px'>", forecast$temperature_2m_max[i], "F / ",
+          forecast$temperature_2m_min[i], "F</td>",
           "<td style='padding:3px 8px'>", forecast$precipitation_sum[i], " in</td>",
           "</tr>"
         )
@@ -304,9 +312,9 @@ function(input, output, session) {
     
     popup_text <- paste0(
       "<b style='font-size:14px'>", city, ", ", country, "</b><br><br>",
-      "🌡️ <b>Now:</b> ", weather$temperature, "°F<br>",
-      "💨 <b>Wind:</b> ", weather$windspeed, " km/h<br>",
-      "🌤️ <b>Conditions:</b> ", weather_description, "<br><br>",
+      "<b>Now:</b> ", weather$temperature, " F<br>",
+      "<b>Wind:</b> ", weather$windspeed, " km/h<br>",
+      "<b>Conditions:</b> ", weather_description, "<br><br>",
       "<b>7-Day Forecast</b><br>",
       "<table style='font-size:11px; border-collapse:collapse'>",
       "<tr style='background:#f0f0f0'>",
@@ -322,7 +330,7 @@ function(input, output, session) {
       addPopups(lng = lon, lat = lat, popup = popup_text)
   })
   
-  # UNESCO sites list
+  # --- UNESCO: sites list ---
   selected_site <- reactiveVal(NULL)
   
   output$sites_table <- renderUI({
@@ -343,7 +351,7 @@ function(input, output, session) {
     )
   })
   
-  # Observe each site click
+  # --- UNESCO: observe site clicks ---
   observe({
     req(input$UNESCOCountry)
     sites <- UNESCO[UNESCO$Country == input$UNESCOCountry, "World Heritage Site", drop = TRUE]
@@ -355,7 +363,7 @@ function(input, output, session) {
     })
   })
   
-  # Site image from Wikipedia for list clicks
+  # --- UNESCO: site image from Wikipedia ---
   output$site_image <- renderUI({
     req(selected_site())
     url <- paste0(
@@ -365,9 +373,9 @@ function(input, output, session) {
     response <- tryCatch(GET(url), error = function(e) NULL)
     if (!is.null(response) && status_code(response) == 200) {
       data <- fromJSON(content(response, "text", encoding = "UTF-8"))
-      img_url <- data$thumbnail$source
+      img_url     <- data$thumbnail$source
       description <- data$extract
-      wiki_url <- data$content_urls$desktop$page
+      wiki_url    <- data$content_urls$desktop$page
       tagList(
         br(),
         h4(selected_site()),
@@ -376,14 +384,14 @@ function(input, output, session) {
                    style = "border-radius: 8px; margin-bottom: 10px;")
         },
         p(description),
-        tags$a(href = wiki_url, target = "_blank", "📖 Read more on Wikipedia")
+        tags$a(href = wiki_url, target = "_blank", "Read more on Wikipedia")
       )
     } else {
       p("No image available for this site.")
     }
   })
   
-  # UNESCO map - initial render
+  # --- UNESCO map: initial render ---
   output$unesco_map <- renderLeaflet({
     leaflet(unesco_coords) %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
@@ -397,7 +405,15 @@ function(input, output, session) {
       )
   })
   
-  # Zoom map when country selected
+  # --- UNESCO map: redraw when tab activated (fixes grey box) ---
+  observeEvent(input$tabs, {
+    if (!is.null(input$tabs) && input$tabs == "travel_suggestions") {
+      leafletProxy("unesco_map") %>%
+        setView(lng = 0, lat = 20, zoom = 2)
+    }
+  })
+  
+  # --- UNESCO map: zoom to country ---
   observeEvent(input$UNESCOCountry, {
     req(input$UNESCOCountry)
     filtered <- unesco_coords[unesco_coords$Country == input$UNESCOCountry, ]
@@ -420,7 +436,7 @@ function(input, output, session) {
     }
   }, ignoreInit = TRUE)
   
-  # When marker clicked show image in right panel and simple popup on map
+  # --- UNESCO map: marker click ---
   observeEvent(input$unesco_map_marker_click, {
     click <- input$unesco_map_marker_click
     req(click$id)
@@ -439,8 +455,8 @@ function(input, output, session) {
       URLencode(site_name)
     )
     
-    img_tag <- NULL
-    desc_tag <- NULL
+    img_tag   <- NULL
+    desc_tag  <- NULL
     wiki_link <- NULL
     
     tryCatch({
@@ -461,7 +477,7 @@ function(input, output, session) {
           wiki_link <- tags$a(
             href = wiki_data$content_urls$desktop$page,
             target = "_blank",
-            "📖 Read more on Wikipedia"
+            "Read more on Wikipedia"
           )
         }
       }
@@ -470,11 +486,11 @@ function(input, output, session) {
     output$unesco_popup_image <- renderUI({
       tagList(
         h4(site_name),
-        span(style = "color:#666", paste0("🌍 ", country)),
+        span(style = "color:#666", paste0("Country: ", country)),
         br(), br(),
         img_tag,
         desc_tag,
-        tags$a(href = gmaps_url, target = "_blank", "📍 Open in Google Maps"),
+        tags$a(href = gmaps_url, target = "_blank", "Open in Google Maps"),
         tags$span("  "),
         wiki_link
       )
@@ -485,7 +501,7 @@ function(input, output, session) {
       addPopups(
         lng = lng,
         lat = lat,
-        popup = paste0("<b>", site_name, "</b><br>🌍 ", country)
+        popup = paste0("<b>", site_name, "</b><br>", country)
       )
   })
 }
