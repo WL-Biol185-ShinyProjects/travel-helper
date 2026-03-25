@@ -4,6 +4,9 @@ library(readxl)
 library(tidyverse)
 library(dplyr)
 library(leaflet)
+library(scales)
+library(lubridate)
+
 
 # Data loading
 passport_info      <- read.csv("passport-index-tidy.csv")
@@ -91,6 +94,40 @@ world_cities$id  <- as.character(world_cities$id)
 
 final_flights <- readRDS("final_flights.rds")
 
+carrier_names_flights <- c(
+  "WN" = "Southwest Airlines",
+  "DL" = "Delta Air Lines",
+  "AA" = "American Airlines",
+  "OO" = "SkyWest Airlines",
+  "UA" = "United Airlines",
+  "YX" = "Midwest Airlines",
+  "B6" = "JetBlue Airways",
+  "MQ" = "Envoy Air",
+  "NK" = "Spirit Airlines",
+  "AS" = "Alaska Airlines",
+  "OH" = "Comair",
+  "9E" = "Endeavor Air",
+  "F9" = "Frontier Airlines",
+  "G4" = "Allegiant Air",
+  "PT" = "Piedmont Airlines",
+  "YV" = "Mesa Airlines",
+  "QX" = "Horizon Air",
+  "HA" = "Hawaiian Airlines",
+  "C5" = "CommuteAir",
+  "G7" = "GoJet Airlines",
+  "ZW" = "Air Wisconsin"
+)
+
+final_flights <- final_flights %>%
+  mutate(MKT_UNIQUE_CARRIER = carrier_names_flights[MKT_UNIQUE_CARRIER])
+
+numeric_to_time <- function(x) {
+  hours   <- x %/% 100
+  minutes <- x %%  100
+  as.POSIXct(sprintf("%02d:%02d", hours, minutes), format = "%H:%M")
+}
+dep_times <- numeric_to_time(final_flights$CRS_DEP_TIME)
+del_times <- numeric_to_time(final_flights$DEP_TIME)
 
 # --- UI ---
 
@@ -105,7 +142,7 @@ dashboardPage(
       menuItem("Weather",              tabName = "weather"),
       menuItem("Airports",             tabName = "airports"),
       menuItem("Airlines",             tabName = "airlines"),
-      menuItem("Pricing",              tabName = "pricing"),
+      menuItem("Pricing and Statistics",              tabName = "pricing"),
       menuItem("Travel Suggestions",   tabName = "travel_suggestions")
     )
   ),
@@ -269,12 +306,15 @@ dashboardPage(
       # --- Airlines tab ---
       tabItem(tabName = "airlines",
               fluidRow(
-                box(),
-                box()
+                box(  plotOutput("delay_plot")
+                ), 
+                box(
+                   plotOutput("cancellation_plot")
+                    ),
               )
       ),
       
-      # --- Pricing tab ---
+      # --- Pricing and stats tab ---
       tabItem(tabName = "pricing",
               fluidRow(
                 box(
@@ -291,7 +331,18 @@ dashboardPage(
                 box(
                   width = 8,
                   title = "Route Information", status = "primary", solidHeader = TRUE,
-                  uiOutput("route_results")
+                  uiOutput("route_results"),
+                box(width = 8,
+                    title = "Route Information",
+                    status = "primary",
+                    solidHeader = TRUE,
+                    uiOutput("route_results")
+                    ), 
+                box(
+                  plotOutput("busiest_days_plot"),
+                  p("💡 The busiest travel day was the Sunday after Thanksgiving, as millions of Americans returned home from the holiday weekend!",
+                    style = "color: #666666; font-size: 13px; margin-top: 8px; font-style: italic;")
+
                 )
               )
       ),
@@ -346,4 +397,5 @@ dashboardPage(
       
     ) # end tabItems
   )   # end dashboardBody
-)     # end dashboardPage
+)
+)# end dashboardPage

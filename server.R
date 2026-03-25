@@ -6,6 +6,8 @@ library(dplyr)
 library(httr)
 library(jsonlite)
 library(leaflet)
+library(scales)
+library(lubridate)
 
 # Data loading
 UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
@@ -86,6 +88,43 @@ passport_info$Requirement <- recode(passport_info$Requirement, !!!v)
 
 final_flights <- readRDS("final_flights.rds")
 
+
+carrier_names_flights <- c(
+  "WN" = "Southwest Airlines",
+  "DL" = "Delta Air Lines",
+  "AA" = "American Airlines",
+  "OO" = "SkyWest Airlines",
+  "UA" = "United Airlines",
+  "YX" = "Midwest Airlines",
+  "B6" = "JetBlue Airways",
+  "MQ" = "Envoy Air",
+  "NK" = "Spirit Airlines",
+  "AS" = "Alaska Airlines",
+  "OH" = "Comair",
+  "9E" = "Endeavor Air",
+  "F9" = "Frontier Airlines",
+  "G4" = "Allegiant Air",
+  "PT" = "Piedmont Airlines",
+  "YV" = "Mesa Airlines",
+  "QX" = "Horizon Air",
+  "HA" = "Hawaiian Airlines",
+  "C5" = "CommuteAir",
+  "G7" = "GoJet Airlines",
+  "ZW" = "Air Wisconsin"
+)
+
+final_flights <- final_flights %>%
+  mutate(MKT_UNIQUE_CARRIER = carrier_names_flights[MKT_UNIQUE_CARRIER])
+
+# Convert to POSIXct (today's date + time)
+numeric_to_time <- function(x) {
+  hours   <- x %/% 100
+  minutes <- x %%  100
+  as.POSIXct(sprintf("%02d:%02d", hours, minutes), format = "%H:%M")
+}
+dep_times <- numeric_to_time(final_flights$CRS_DEP_TIME)
+del_times <- numeric_to_time(final_flights$DEP_TIME)
+>>>>>>> e6231e870f3f270a7efab59483c35e6495e1122b
 
 # Server
 function(input, output, session) {
@@ -505,3 +544,314 @@ function(input, output, session) {
       )
   })
 }
+  # Airfare - destination dropdown
+  output$dest_dropdown <- renderUI({
+    req(input$origin)
+    destinations <- airfare_data %>%
+      filter(city1 == input$origin) %>%
+      pull(city2) %>%
+      as.character() %>%
+      unique() %>%
+      sort()
+    selectizeInput("dest",
+                   label = "Destination City",
+                   choices = destinations,
+                   options = list(placeholder = "Select destination city..."))
+  })
+  
+  # Airfare - route search
+  route_data <- eventReactive(input$search, {
+    req(input$origin, input$dest)
+    airfare_data %>%
+      filter(city1 == input$origin, city2 == input$dest) %>%
+      arrange(desc(Year), desc(quarter)) %>%
+      slice(1)
+  })
+  
+  # Airfare - display results
+  output$route_results <- renderUI({
+    req(route_data())
+    df <- route_data()
+    
+    if (nrow(df) == 0) {
+      return(p("No data found for this route."))
+    }
+    
+    tagList(
+      h4(paste(as.character(df$city1), "→", as.character(df$city2))),
+      br(),
+      fluidRow(
+        column(6,
+               wellPanel(
+                 h4("✈ Largest Carrier"),
+                 h2(as.character(df$carrier_lg)),
+                 p(paste("Market share:", round(as.numeric(df$large_ms) * 100, 1), "%")),
+                 p(paste("Avg fare: $", as.character(df$fare_lg)))
+               )
+        ),
+        column(6,
+               wellPanel(
+                 h4("💰 Cheapest Carrier"),
+                 h2(as.character(df$carrier_low)),
+                 p(paste("Market share:", round(as.numeric(df$lf_ms) * 100, 1), "%")),
+                 p(paste("Avg fare: $", as.character(df$fare_low)))
+               )
+        )
+      ),
+      br(),
+      p(paste("Distance:", df$nsmiles, "miles  |  Passengers:", df$passengers,
+              " |  Data from: Q", df$quarter, df$Year))
+    )
+  })
+  
+  # Weather map - initial render
+  output$weather_map <- renderLeaflet({
+    leaflet(world_cities) %>%
+      addProviderTiles(providers$CartoDB.Positron) %>%
+      setView(lng = 0, lat = 20, zoom = 2) %>%
+      addMarkers(
+        lng = ~lng,
+        lat = ~lat,
+        layerId = ~id,
+        label = ~paste0(city, ", ", country),
+        clusterOptions = markerClusterOptions()
+      )
+  })
+  
+  # Render city dropdown based on selected country
+  output$city_selector <- renderUI({
+    req(input$weather_country)
+    cities <- world_cities[world_cities$country == input$weather_country, ]
+    selectizeInput("weather_city", "Select City",
+                   choices = c("", sort(unique(cities$city))),
+                   options = list(placeholder = "Type or select a city..."))
+  })
+  
+  # Fly to country when dropdown selected
+  observeEvent(input$weather_country, {
+    req(input$weather_country)
+    country_cities <- world_cities[world_cities$country == input$weather_country, ]
+    if (nrow(country_cities) > 0) {
+      avg_lat <- mean(country_cities$lat, na.rm = TRUE)
+      avg_lng <- mean(country_cities$lng, na.rm = TRUE)
+      leafletProxy("weather_map") %>%
+        setView(lng = avg_lng, lat = avg_lat, zoom = 5)
+    }
+  })
+  
+  # Fly to city when selected
+  observeEvent(input$weather_city, {
+    req(input$weather_city)
+    row <- world_cities[world_cities$city == input$weather_city & 
+                          world_cities$country == input$weather_country, ]
+    if (nrow(row) > 0) {
+      leafletProxy("weather_map") %>%
+        setView(lng = row$lng[1], lat = row$lat[1], zoom = 8)
+    }
+  })
+  
+  # When a city marker is clicked, fetch and display weather
+  observeEvent(input$weather_map_marker_click, {
+    click <- input$weather_map_marker_click
+    row <- world_cities[world_cities$id == click$id, ]
+    lat <- row$lat
+    lon <- row$lng
+    city <- row$city
+    country <- row$country
+    
+    url <- paste0(
+      "https://api.open-meteo.com/v1/forecast?",
+      "latitude=", lat,
+      "&longitude=", lon,
+      "&current_weather=true",
+      "&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode",
+      "&temperature_unit=fahrenheit",
+      "&precipitation_unit=inch",
+      "&timezone=auto",
+      "&forecast_days=7"
+    )
+    
+    response <- GET(url)
+    data <- fromJSON(content(response, "text", encoding = "UTF-8"))
+    weather <- data$current_weather
+    forecast <- as.data.frame(data$daily)
+    
+    weather_description <- case_when(
+      weather$weathercode == 0        ~ "Clear sky ☀️",
+      weather$weathercode %in% 1:3   ~ "Partly cloudy ⛅",
+      weather$weathercode %in% 45:48 ~ "Foggy 🌫️",
+      weather$weathercode %in% 51:67 ~ "Rainy 🌧️",
+      weather$weathercode %in% 71:77 ~ "Snowy ❄️",
+      weather$weathercode %in% 80:82 ~ "Rain showers 🌦️",
+      weather$weathercode %in% 95:99 ~ "Thunderstorm ⛈️",
+      TRUE ~ "Unknown"
+    )
+    
+    forecast_rows <- paste0(
+      sapply(1:nrow(forecast), function(i) {
+        paste0(
+          "<tr>",
+          "<td style='padding:3px 8px'>", forecast$time[i], "</td>",
+          "<td style='padding:3px 8px'>", forecast$temperature_2m_max[i], "°F / ",
+          forecast$temperature_2m_min[i], "°F</td>",
+          "<td style='padding:3px 8px'>", forecast$precipitation_sum[i], " in</td>",
+          "</tr>"
+        )
+      }),
+      collapse = ""
+    )
+    
+    popup_text <- paste0(
+      "<b style='font-size:14px'>", city, ", ", country, "</b><br><br>",
+      "🌡️ <b>Now:</b> ", weather$temperature, "°F<br>",
+      "💨 <b>Wind:</b> ", weather$windspeed, " km/h<br>",
+      "🌤️ <b>Conditions:</b> ", weather_description, "<br><br>",
+      "<b>7-Day Forecast</b><br>",
+      "<table style='font-size:11px; border-collapse:collapse'>",
+      "<tr style='background:#f0f0f0'>",
+      "<th style='padding:3px 8px'>Date</th>",
+      "<th style='padding:3px 8px'>High / Low</th>",
+      "<th style='padding:3px 8px'>Precip</th>",
+      "</tr>",
+      forecast_rows,
+      "</table>"
+    )
+    
+    leafletProxy("weather_map") %>%
+      addPopups(lng = lon, lat = lat, popup = popup_text)
+    
+    
+  })
+  
+  output$delay_plot <- renderPlot({
+    
+    delay_summary <- final_flights %>%
+      group_by(MKT_UNIQUE_CARRIER) %>%
+      summarise(
+        total_flights = n(),
+        delayed_flights = sum(DEP_DELAY > 15, na.rm = TRUE),
+        delay_pct = delayed_flights / total_flights * 100
+      ) %>%
+      filter(total_flights >= 30) %>%
+      arrange(delay_pct) %>%
+      mutate(MKT_UNIQUE_CARRIER = fct_inorder(MKT_UNIQUE_CARRIER))
+    
+    avg_delay <- mean(delay_summary$delay_pct)
+    
+    ggplot(delay_summary, aes(x = delay_pct, y = MKT_UNIQUE_CARRIER, fill = delay_pct)) +
+      geom_col(width = 0.7) +
+      geom_text(
+        aes(label = paste0(round(delay_pct, 1), "%")),
+        hjust = -0.15, size = 3.5, color = "#333333"
+      ) +
+      geom_vline(xintercept = avg_delay, linetype = "dashed", color = "#E05C2A", linewidth = 0.8) +
+      annotate("text", x = avg_delay + 0.5, y = 0.6,
+               label = paste0("Avg: ", round(avg_delay, 1), "%"),
+               color = "#E05C2A", size = 3.2, hjust = 0) +
+      scale_fill_gradient(low = "#43AA8B", high = "#E05C2A") +
+      scale_x_continuous(
+        expand = expansion(mult = c(0, 0.12)),
+        labels = label_percent(scale = 1)
+      ) +
+      labs(
+        title = "Which Airlines Delay Flights the Most?",
+        subtitle = "% of flights delayed more than 10 minutes · Dashed line = overall average",
+        x = NULL, y = NULL,
+        caption = "Source: final_flights dataset"
+      ) +
+      theme_minimal(base_size = 13) +
+      theme(
+        plot.title = element_text(face = "bold", size = 16),
+        plot.subtitle = element_text(color = "#666666", size = 11),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = "none",
+        plot.caption = element_text(color = "#aaaaaa", size = 9)
+      )
+  })
+  
+  output$cancellation_plot <- renderPlot({
+    
+    cancellation_summary <- final_flights %>%
+      group_by(MKT_UNIQUE_CARRIER) %>%
+      summarise(
+        total_flights = n(),
+        cancelled_flights = sum(CANCELLED == 1.00, na.rm = TRUE),
+        cancellation_pct = cancelled_flights / total_flights * 100
+      ) %>%
+      filter(total_flights >= 30) %>%
+      arrange(cancellation_pct) %>%
+      mutate(MKT_UNIQUE_CARRIER = fct_inorder(MKT_UNIQUE_CARRIER))
+    
+    avg_cancellation <- mean(cancellation_summary$cancellation_pct)
+    
+    ggplot(cancellation_summary, aes(x = cancellation_pct, y = MKT_UNIQUE_CARRIER, fill = cancellation_pct)) +
+      geom_col(width = 0.7) +
+      geom_text(
+        aes(label = paste0(round(cancellation_pct, 1), "%")),
+        hjust = -0.15, size = 3.5, color = "#333333"
+      ) +
+      geom_vline(xintercept = avg_cancellation, linetype = "dashed", color = "#C84B8F", linewidth = 0.8) +
+      annotate("text", x = avg_cancellation + 0.5, y = 0.6,
+               label = paste0("Avg: ", round(avg_cancellation, 1), "%"),
+               color = "#C84B8F", size = 3.2, hjust = 0) +
+      scale_fill_gradient(low = "#9BD4C5", high = "#4B0082") +
+      scale_x_continuous(
+        expand = expansion(mult = c(0, 0.12)),
+        labels = label_percent(scale = 1)
+      ) +
+      labs(
+        title = "Which Airlines Cancel Flights the Most?",
+        subtitle = "% of flights cancelled · Dashed line = overall average",
+        x = NULL, y = NULL,
+        caption = "Source: final_flights dataset"
+      ) +
+      theme_minimal(base_size = 13) +
+      theme(
+        plot.title = element_text(face = "bold", size = 16),
+        plot.subtitle = element_text(color = "#666666", size = 11),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = "none",
+        plot.caption = element_text(color = "#aaaaaa", size = 9)
+      )
+  })
+  
+  output$busiest_days_plot <- renderPlot({
+    
+    busiest_days <- final_flights %>%
+      group_by(FL_DATE) %>%
+      summarise(total_flights = n()) %>%
+      arrange(desc(total_flights)) %>%
+      slice_head(n = 10) %>%
+      arrange(total_flights) %>%
+      mutate(FL_DATE = fct_inorder(as.character(FL_DATE)))
+    
+    ggplot(busiest_days, aes(x = total_flights, y = FL_DATE, fill = total_flights)) +
+      geom_col(width = 0.7) +
+      geom_text(
+        aes(label = scales::comma(total_flights)),
+        hjust = -0.15, size = 3.5, color = "#333333"
+      ) +
+      scale_fill_gradient(low = "#F0C27F", high = "#C0392B") +
+      scale_x_continuous(
+        expand = expansion(mult = c(0, 0.12)),
+        labels = scales::comma
+      ) +
+      labs(
+        title = "Top 10 Busiest Travel Days of 2025",
+        subtitle = "Days with the highest number of flights",
+        x = NULL, y = NULL,
+        caption = "Source: final_flights dataset"
+      ) +
+      theme_minimal(base_size = 13) +
+      theme(
+        plot.title = element_text(face = "bold", size = 16),
+        plot.subtitle = element_text(color = "#666666", size = 11),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = "none",
+        plot.caption = element_text(color = "#aaaaaa", size = 9)
+      )
+  })
+  
