@@ -674,7 +674,292 @@ function(input, output, session) {
         plot.caption = element_text(color = "#aaaaaa", size = 9)
       )
   })
+  packing_list_data <- eventReactive(input$generate_list, {
+    req(input$UNESCOCountry, input$pack_depart, input$pack_return)
+    
+    trip_days <- as.numeric(difftime(input$pack_return, input$pack_depart, units = "days"))
+    
+    # Pull forecast for destination country
+    country_row <- world_cities[world_cities$country == input$UNESCOCountry, ]
+    lat <- mean(country_row$lat, na.rm = TRUE)
+    lon <- mean(country_row$lng, na.rm = TRUE)
+    
+    temps <- tryCatch({
+      url <- paste0(
+        "https://api.open-meteo.com/v1/forecast?",
+        "latitude=", lat, "&longitude=", lon,
+        "&daily=temperature_2m_max,temperature_2m_min",
+        "&temperature_unit=fahrenheit",
+        "&timezone=auto&forecast_days=7"
+      )
+      resp <- GET(url)
+      data <- fromJSON(content(resp, "text", encoding = "UTF-8"))
+      avg_high <- mean(data$daily$temperature_2m_max, na.rm = TRUE)
+      avg_low  <- mean(data$daily$temperature_2m_min, na.rm = TRUE)
+      list(high = avg_high, low = avg_low)
+    }, error = function(e) list(high = NA, low = NA))
+    
+    cold <- !is.na(temps$low)  && temps$low  < 45
+    warm <- !is.na(temps$high) && temps$high > 75
+    
+    tropical_countries <- c(
+      "Thailand", "Indonesia", "Philippines", "Malaysia", "Maldives", "Sri Lanka",
+      "Vietnam", "Cambodia", "Myanmar", "Laos", "Singapore", "Brunei", "Timor-Leste",
+      "Mexico", "Costa Rica", "Panama", "Belize", "Honduras", "Guatemala", "Nicaragua",
+      "El Salvador", "Cuba", "Jamaica", "Dominican Republic", "Haiti", "Puerto Rico",
+      "Barbados", "Trinidad and Tobago", "Saint Lucia", "Antigua and Barbuda",
+      "Saint Kitts and Nevis", "Grenada", "Dominica", "Bahamas", "Turks and Caicos",
+      "Cayman Islands", "Aruba", "Curacao", "Bonaire",
+      "Brazil", "Colombia", "Venezuela", "Ecuador", "Peru", "Guyana", "Suriname",
+      "French Guiana", "Bolivia",
+      "Nigeria", "Ghana", "Senegal", "Ivory Coast", "Cameroon", "Kenya", "Tanzania",
+      "Mozambique", "Madagascar", "Mauritius", "Seychelles",
+      "Australia", "Fiji", "Papua New Guinea", "Vanuatu", "Solomon Islands",
+      "Samoa", "Tonga", "Kiribati", "Palau", "Marshall Islands", "Micronesia",
+      "India", "Bangladesh", "Oman", "Yemen", "Djibouti",
+      "United Arab Emirates", "Qatar", "Bahrain", "Kuwait",
+      "Egypt", "Libya", "Tunisia", "Morocco", "Algeria"
+    )
+    
+    tropical <- input$UNESCOCountry %in% tropical_countries
+    
+    # Build categories
+    documents <- c(
+      "Passport",
+      "Flight confirmation & boarding passes",
+      "Hotel / accommodation confirmation",
+      "Travel insurance documents",
+      "Emergency contacts list",
+      if (trip_days > 14) "Extra passport photos"
+    )
+    
+    clothing <- c(
+      paste0(min(trip_days, 7), " pairs of underwear & socks"),
+      paste0(ceiling(trip_days / 3), " casual tops"),
+      if (cold)    c("Heavy coat or parka", "Thermal underlayers", "Warm hat & gloves", "Scarf", "Waterproof boots"),
+      if (warm)    c("Light t-shirts / tank tops", "Shorts or light pants", "Comfortable walking shoes"),
+      if (tropical) c("Swimsuit / bathing suit", "Beach cover-up or sarong", "Flip flops or sandals", "Sun hat or visor"),
+      if (!cold && !warm && !tropical) c("Light jacket or hoodie", "Mix of long & short sleeve tops", "Comfortable walking shoes"),
+      "Versatile pants or jeans",
+      "One smart/dressy outfit",
+      "Comfortable pajamas",
+      "Laundry bag"
+    )
+    
+    toiletries <- c(
+      "Toothbrush & toothpaste",
+      "Shampoo & conditioner",
+      "Body wash / soap",
+      "Deodorant",
+      "Razor & shaving cream",
+      "Skincare / moisturizer",
+      if (warm || tropical) c("Sunscreen SPF 50+", "After-sun lotion / aloe vera", "Insect repellent"),
+      if (tropical)         c("Waterproof sunscreen", "Reef-safe sunscreen"),
+      if (cold)             "Lip balm & heavy moisturizer",
+      "Nail clippers & tweezers",
+      "Travel mirror"
+    )
+    
+    health <- c(
+      "Prescription medications (enough for trip + extra)",
+      "Pain relievers (ibuprofen / acetaminophen)",
+      "Antihistamines",
+      "Antidiarrheal medicine",
+      "Band-aids & blister pads",
+      "Hand sanitizer",
+      "Face masks",
+      if (warm || tropical) "Oral rehydration salts"
+    )
+    
+    electronics <- c(
+      "Phone & charger",
+      "Portable power bank",
+      "Universal travel adapter",
+      "Headphones or earbuds",
+      "Camera (if not using phone)",
+      if (trip_days > 5) "Laptop or tablet & charger",
+      "E-reader or books"
+    )
+    
+    misc <- c(
+      "Local currency or travel card",
+      "Reusable water bottle",
+      "Day bag or small backpack",
+      "Snacks for travel day",
+      "Neck pillow & eye mask",
+      "Luggage locks",
+      if (trip_days > 10) "Collapsible extra bag for souvenirs",
+      "Pen (for customs forms)"
+    )
+    
+    list(
+      trip_days = trip_days,
+      temps     = temps,
+      cold      = cold,
+      warm      = warm,
+      tropical  = tropical,
+      categories = list(
+        "📄 Documents"     = documents,
+        "👕 Clothing"      = clothing,
+        "🧴 Toiletries"    = toiletries,
+        "💊 Health"        = health,
+        "🔌 Electronics"   = electronics,
+        "🎒 Miscellaneous" = misc
+      )
+    )
+  })
   
+  output$packing_list_output <- renderUI({
+    req(packing_list_data())
+    d <- packing_list_data()
+    
+    temp_msg <- if (d$cold) {
+      "🥶 Cold weather expected — warm layers included."
+    } else if (d$tropical) {
+      "🏖️ Tropical destination — beach gear & sun protection included."
+    } else if (d$warm) {
+      "☀️ Warm weather expected — light clothing & sun protection included."
+    } else {
+      "🌤️ Mild weather expected — versatile layers included."
+    }
+    
+    tagList(
+      p(style = "color:#666; font-style:italic",
+        paste0("Trip length: ", d$trip_days, " days  |  ", temp_msg)),
+      br(),
+      lapply(names(d$categories), function(cat_name) {
+        items <- d$categories[[cat_name]]
+        items <- items[!is.null(items) & !is.na(items) & nchar(items) > 0]
+        tagList(
+          h4(cat_name),
+          tags$ul(lapply(items, function(item) tags$li(item)))
+        )
+      })
+    )
+  })
+  # Fetch country list from State Dept API on app load
+  observe({
+    tryCatch({
+      resp <- GET("https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories.html/_jcr_content/ada_form_parsys/ada_form/items.model.json")
+      
+      if (status_code(resp) == 200) {
+        data <- fromJSON(content(resp, "text", encoding = "UTF-8"))
+        country_names <- sort(unique(data$items$country))
+        updateSelectizeInput(session, "advisory_country",
+                             choices  = country_names,
+                             server   = TRUE)
+      }
+    }, error = function(e) NULL)
+  })
+  
+  advisory_data <- eventReactive(input$get_advisory, {
+    req(input$advisory_country)
+    
+    # Fetch the RSS feed
+    resp <- tryCatch(
+      GET("https://travel.state.gov/_res/rss/TAsTWs.rss"),
+      error = function(e) NULL
+    )
+    
+    if (is.null(resp) || status_code(resp) != 200) {
+      return(list(error = "Could not reach the U.S. State Department. Please try again later."))
+    }
+    
+    xml_text <- content(resp, "text", encoding = "UTF-8")
+    
+    # Split into individual items
+    items <- strsplit(xml_text, "<item>")[[1]][-1]
+    
+    # Find the matching country
+    matched <- NULL
+    for (item in items) {
+      title_match <- regmatches(item, regexpr("(?<=<title>)[^<]+(?=</title>)", item, perl = TRUE))
+      if (length(title_match) > 0 && grepl(input$advisory_country, title_match, fixed = TRUE)) {
+        matched <- item
+        break
+      }
+    }
+    
+    if (is.null(matched)) {
+      return(list(error = paste0("No advisory found for ", input$advisory_country, ".")))
+    }
+    
+    # Extract fields
+    title <- regmatches(matched, regexpr("(?<=<title>)[^<]+(?=</title>)", matched, perl = TRUE))
+    
+    level_num <- NA
+    level_label <- "Unknown"
+    if (grepl("Level 1", title)) { level_num <- 1; level_label <- "Level 1 — Exercise Normal Caution" }
+    if (grepl("Level 2", title)) { level_num <- 2; level_label <- "Level 2 — Exercise Increased Caution" }
+    if (grepl("Level 3", title)) { level_num <- 3; level_label <- "Level 3 — Reconsider Travel" }
+    if (grepl("Level 4", title)) { level_num <- 4; level_label <- "Level 4 — Do Not Travel" }
+    
+    description <- regmatches(matched, regexpr("(?<=<description>)[^<]+(?=</description>)", matched, perl = TRUE))
+    description <- if (length(description) > 0) trimws(description) else "No summary available."
+    
+    link <- regmatches(matched, regexpr("(?<=<link>)[^<]+(?=</link>)", matched, perl = TRUE))
+    link <- if (length(link) > 0) trimws(link) else NA
+    
+    pub_date <- regmatches(matched, regexpr("(?<=<pubDate>)[^<]+(?=</pubDate>)", matched, perl = TRUE))
+    pub_date <- if (length(pub_date) > 0) trimws(pub_date) else NA
+    
+    list(
+      error       = NULL,
+      country     = input$advisory_country,
+      level_num   = level_num,
+      level_label = level_label,
+      description = description,
+      link        = link,
+      pub_date    = pub_date
+    )
+  })
+  
+  output$advisory_output <- renderUI({
+    req(advisory_data())
+    d <- advisory_data()
+    
+    if (!is.null(d$error)) {
+      return(p(style = "color:red;", d$error))
+    }
+    
+    # Color and icon based on level
+    level_color <- switch(as.character(d$level_num),
+                          "1" = "#2a9d8f",
+                          "2" = "#e9c46a",
+                          "3" = "#f4a261",
+                          "4" = "#e63946",
+                          "#888888"
+    )
+    
+    level_icon <- switch(as.character(d$level_num),
+                         "1" = "✅",
+                         "2" = "⚠️",
+                         "3" = "🔶",
+                         "4" = "🚫",
+                         "❓"
+    )
+    
+    tagList(
+      tags$div(
+        style = paste0(
+          "background-color:", level_color, "22;",
+          "border-left: 5px solid ", level_color, ";",
+          "padding: 12px 16px;",
+          "border-radius: 4px;",
+          "margin-bottom: 12px;"
+        ),
+        h3(style = paste0("color:", level_color, "; margin-top:0;"),
+           paste0(level_icon, " ", d$level_label)),
+        h4(style = "margin-top:0;", d$country)
+      ),
+      p(style = "font-size:14px; margin-top: 10px;", d$description),
+      if (!is.na(d$pub_date)) p(style = "color:#999; font-size:12px;", paste0("Last updated: ", d$pub_date)),
+      if (!is.na(d$link))
+        tags$a(href = d$link, target = "_blank",
+               class = "btn btn-sm btn-default",
+               "View Full Advisory on State.gov ↗")
+    )
+  })
 }
 
   

@@ -266,6 +266,21 @@ dashboardPage(
                   h4("Converter Recommendation"),
                   verbatimTextOutput("converter_rec")
                 )
+              ),
+              fluidRow(
+                box(
+                  title = "🛡️ U.S. Travel Advisory", status = "danger", solidHeader = TRUE,
+                  width = 12,
+                  p("Travel advisory information from the U.S. Department of State."),
+                  selectizeInput("advisory_country",
+                                 label = "Select Destination Country",
+                                 choices = NULL,
+                                 options = list(placeholder = "Type or select a country...")),
+                  actionButton("get_advisory", "Get Advisory 🛡️",
+                               class = "btn-danger", width = "20%"),
+                  br(), br(),
+                  uiOutput("advisory_output")
+                )
               )
       ),
       
@@ -399,12 +414,24 @@ dashboardPage(
                 box(
                   title = "Site Details", status = "info", solidHeader = TRUE,
                   width = 6,
-
-                  p("Click a site name above to see details and photos here."),
-
-                  p("👆 Click a site name above to see details and photos here."),
-
+                  p("Click a site name on the left to see details and photos here."),
                   uiOutput("site_image")
+                )
+              ),
+              fluidRow(
+                box(
+                  width = 4, status = "primary", solidHeader = TRUE,
+                  title = "🧳 Packing List Generator",
+                  p("Select your destination country above, then enter your travel dates to generate a packing list."),
+                  dateInput("pack_depart", "Departure Date", value = Sys.Date()),
+                  dateInput("pack_return", "Return Date",    value = Sys.Date() + 7),
+                  actionButton("generate_list", "Generate Packing List 🧳",
+                               class = "btn-primary", width = "100%")
+                ),
+                box(
+                  width = 8, status = "success", solidHeader = TRUE,
+                  title = "Your Packing List",
+                  uiOutput("packing_list_output")
                 )
               )
       )
