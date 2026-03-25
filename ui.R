@@ -31,6 +31,8 @@ airfare_data <- read.csv("airfare_data.csv") %>%
     city2    = trimws(city2)
   )
 
+travel_quiz <- read.csv("Worldwide_Travel_Cities_Dataset.csv")
+
 carrier_names <- c(
   "AA" = "American Airlines",   "AS" = "Alaska Airlines",
   "B6" = "JetBlue Airways",     "DL" = "Delta Air Lines",
