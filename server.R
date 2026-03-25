@@ -109,6 +109,7 @@ carrier_names_flights <- c(
 final_flights <- final_flights %>%
   mutate(MKT_UNIQUE_CARRIER = carrier_names_flights[MKT_UNIQUE_CARRIER])
 
+<<<<<<< HEAD
 # Convert to POSIXct (today's date + time)
 numeric_to_time <- function(x) {
   hours   <- x %/% 100
@@ -119,6 +120,8 @@ dep_times <- numeric_to_time(final_flights$CRS_DEP_TIME)
 del_times <- numeric_to_time(final_flights$DEP_TIME)
 
 
+=======
+>>>>>>> f9a4c3ed1c5318f79a47e53ebe13913fe0e99ea2
 # Server
 function(input, output, session) {
   
@@ -175,17 +178,40 @@ function(input, output, session) {
   
   # Airports chart
   output$percentage_on_time <- renderPlot({
+    
+    avg_on_time <- mean(arrival_2025$pct_on_time, na.rm = TRUE)
+    
     ggplot(arrival_2025, aes(x = airport, y = pct_on_time, fill = pct_on_time)) +
-      geom_col() +
+      geom_col(width = 0.7) +
+      geom_text(
+        aes(label = paste0(round(pct_on_time, 1), "%")),
+        hjust = -0.15, size = 3.5, color = "#333333"
+      ) +
       coord_flip() +
+      geom_hline(yintercept = avg_on_time, linetype = "dashed", color = "#C84B8F", linewidth = 0.8) +
+      annotate("text", y = avg_on_time + 0.2, x = 0.6,
+               label = paste0("Avg: ", round(avg_on_time, 1), "%"),
+               color = "#C84B8F", size = 3.2, hjust = 0) +
       scale_fill_gradient(low = "#f4a261", high = "#2a9d8f") +
+      scale_y_continuous(
+        expand = expansion(mult = c(0, 0.12)),
+        labels = label_percent(scale = 1)
+      ) +
       labs(
         title = "Airports Ranked by On-Time Arrival Percentage",
-        x = "On-Time Percentage (%)",
-        y = "Airport",
-        fill = "% On-Time"
+        subtitle = "% of flights arriving on time · Dashed line = overall average",
+        x = NULL, y = NULL,
+        caption = "Source: arrival_2025 dataset"
       ) +
-      theme_minimal()
+      theme_minimal(base_size = 13) +
+      theme(
+        plot.title         = element_text(face = "bold", size = 16),
+        plot.subtitle      = element_text(color = "#666666", size = 11),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor   = element_blank(),
+        legend.position    = "none",
+        plot.caption       = element_text(color = "#aaaaaa", size = 9)
+      )
   })
   
   # UNESCO coords
@@ -666,6 +692,55 @@ function(input, output, session) {
         panel.grid.minor = element_blank(),
         legend.position = "none",
         plot.caption = element_text(color = "#aaaaaa", size = 9)
+      )
+  })
+  
+  output$airport_cancellation_plot <- renderPlot({
+    
+    airport_cancel_summary <- final_flights %>%
+      group_by(ORIGIN_CITY_NAME) %>%
+      summarise(
+        total_flights    = n(),
+        cancelled_flights = sum(CANCELLED == 1.00, na.rm = TRUE),
+        cancellation_pct  = cancelled_flights / total_flights * 100
+      ) %>%
+      filter(total_flights >= 30) %>%
+      arrange(desc(cancellation_pct)) %>%
+      slice_head(n = 20) %>%
+      arrange(cancellation_pct) %>%
+      mutate(ORIGIN_CITY_NAME = fct_inorder(ORIGIN_CITY_NAME))
+    
+    avg_cancellation <- mean(airport_cancel_summary$cancellation_pct)
+    
+    ggplot(airport_cancel_summary, aes(x = cancellation_pct, y = ORIGIN_CITY_NAME, fill = cancellation_pct)) +
+      geom_col(width = 0.7) +
+      geom_text(
+        aes(label = paste0(round(cancellation_pct, 1), "%")),
+        hjust = -0.15, size = 3.5, color = "#333333"
+      ) +
+      geom_vline(xintercept = avg_cancellation, linetype = "dashed", color = "#C84B8F", linewidth = 0.8) +
+      annotate("text", x = avg_cancellation + 0.2, y = 0.6,
+               label = paste0("Avg: ", round(avg_cancellation, 1), "%"),
+               color = "#C84B8F", size = 3.2, hjust = 0) +
+      scale_fill_gradient(low = "#9BD4C5", high = "#4B0082") +
+      scale_x_continuous(
+        expand = expansion(mult = c(0, 0.12)),
+        labels = label_percent(scale = 1)
+      ) +
+      labs(
+        title = "Which Airports Have the Most Cancellations?",
+        subtitle = "Top 20 airports by cancellation rate · Dashed line = overall average",
+        x = NULL, y = NULL,
+        caption = "Source: final_flights dataset"
+      ) +
+      theme_minimal(base_size = 13) +
+      theme(
+        plot.title    = element_text(face = "bold", size = 16),
+        plot.subtitle = element_text(color = "#666666", size = 11),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor   = element_blank(),
+        legend.position    = "none",
+        plot.caption       = element_text(color = "#aaaaaa", size = 9)
       )
   })
   
