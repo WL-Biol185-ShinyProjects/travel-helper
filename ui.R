@@ -345,6 +345,7 @@ dashboardPage(
 
                 )
               )
+      )
       ),
       
       # --- Travel Suggestions tab ---
@@ -389,7 +390,7 @@ dashboardPage(
                 box(
                   title = "Site Details", status = "info", solidHeader = TRUE,
                   width = 6,
-                  p("Click a site name on the left to see details and photos here."),
+                  p("Click a site name above to see details and photos here."),
                   uiOutput("site_image")
                 )
               )
@@ -398,4 +399,4 @@ dashboardPage(
     ) # end tabItems
   )   # end dashboardBody
 )
-)# end dashboardPage
+# end dashboardPage
