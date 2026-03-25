@@ -162,12 +162,21 @@ dashboardPage(
                   br(),
                   p("Here's what you can find in each tab:"),
                   tags$ul(
+
                     tags$li("International Travel - Check visa requirements, currency, and vaccination info"),
                     tags$li("Weather - Click any city on the map for a 7-day forecast"),
                     tags$li("Airports - Find the best airports ranked by on-time arrival"),
                     tags$li("Airlines - Explore airline options"),
                     tags$li("Pricing - Compare travel pricing"),
-                    tags$li("Travel Suggestions - Discover UNESCO World Heritage Sites to visit")
+                    tags$li("Travel Suggestions - Discover UNESCO World Heritage Sites to visit"),
+
+                    tags$li("🌍 International Travel — Check visa requirements, currency, and vaccination info"),
+                    tags$li("🌤️ Weather — Click any city on the map for a 7-day forecast"),
+                    tags$li("✈️ Airports — Find the best airports ranked by on-time arrival"),
+                    tags$li("💺 Airlines — Explore airline options"),
+                    tags$li("💰 Pricing and Statistics — Compare travel pricing and travel statistics"),
+                    tags$li("🗺️ Travel Suggestions — Discover UNESCO World Heritage Sites to visit")
+
                   )
                 )
               ),
@@ -390,7 +399,11 @@ dashboardPage(
                 box(
                   title = "Site Details", status = "info", solidHeader = TRUE,
                   width = 6,
+
                   p("Click a site name above to see details and photos here."),
+
+                  p("👆 Click a site name above to see details and photos here."),
+
                   uiOutput("site_image")
                 )
               )
