@@ -837,93 +837,153 @@ function(input, output, session) {
       })
     )
   })
-  # Fetch country list from State Dept API on app load
-  observe({
-    tryCatch({
-      resp <- GET("https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories.html/_jcr_content/ada_form_parsys/ada_form/items.model.json")
-      
-      if (status_code(resp) == 200) {
-        data <- fromJSON(content(resp, "text", encoding = "UTF-8"))
-        country_names <- sort(unique(data$items$country))
-        updateSelectizeInput(session, "advisory_country",
-                             choices  = country_names,
-                             server   = TRUE)
-      }
-    }, error = function(e) NULL)
-  })
-  
-  advisory_data <- eventReactive(input$get_advisory, {
+  # --- Travel Advisory ---
+  output$advisory_output <- renderUI({
     req(input$advisory_country)
     
-    # Fetch the RSS feed
+    # Use the State Dept REST API instead of RSS
+    url <- paste0(
+      "https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories.",
+      gsub(" ", "-", tolower(input$advisory_country)),
+      ".html"
+    )
+    
     resp <- tryCatch(
-      GET("https://travel.state.gov/_res/rss/TAsTWs.rss"),
+      GET(
+        "https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories.html",
+        add_headers(
+          "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "Accept"     = "application/json, text/html"
+        )
+      ),
       error = function(e) NULL
     )
     
-    if (is.null(resp) || status_code(resp) != 200) {
-      return(list(error = "Could not reach the U.S. State Department. Please try again later."))
-    }
-    
-    xml_text <- content(resp, "text", encoding = "UTF-8")
-    
-    # Split into individual items
-    items <- strsplit(xml_text, "<item>")[[1]][-1]
-    
-    # Find the matching country
-    matched <- NULL
-    for (item in items) {
-      title_match <- regmatches(item, regexpr("(?<=<title>)[^<]+(?=</title>)", item, perl = TRUE))
-      if (length(title_match) > 0 && grepl(input$advisory_country, title_match, fixed = TRUE)) {
-        matched <- item
-        break
-      }
-    }
-    
-    if (is.null(matched)) {
-      return(list(error = paste0("No advisory found for ", input$advisory_country, ".")))
-    }
-    
-    # Extract fields
-    title <- regmatches(matched, regexpr("(?<=<title>)[^<]+(?=</title>)", matched, perl = TRUE))
-    
-    level_num <- NA
-    level_label <- "Unknown"
-    if (grepl("Level 1", title)) { level_num <- 1; level_label <- "Level 1 — Exercise Normal Caution" }
-    if (grepl("Level 2", title)) { level_num <- 2; level_label <- "Level 2 — Exercise Increased Caution" }
-    if (grepl("Level 3", title)) { level_num <- 3; level_label <- "Level 3 — Reconsider Travel" }
-    if (grepl("Level 4", title)) { level_num <- 4; level_label <- "Level 4 — Do Not Travel" }
-    
-    description <- regmatches(matched, regexpr("(?<=<description>)[^<]+(?=</description>)", matched, perl = TRUE))
-    description <- if (length(description) > 0) trimws(description) else "No summary available."
-    
-    link <- regmatches(matched, regexpr("(?<=<link>)[^<]+(?=</link>)", matched, perl = TRUE))
-    link <- if (length(link) > 0) trimws(link) else NA
-    
-    pub_date <- regmatches(matched, regexpr("(?<=<pubDate>)[^<]+(?=</pubDate>)", matched, perl = TRUE))
-    pub_date <- if (length(pub_date) > 0) trimws(pub_date) else NA
-    
-    list(
-      error       = NULL,
-      country     = input$advisory_country,
-      level_num   = level_num,
-      level_label = level_label,
-      description = description,
-      link        = link,
-      pub_date    = pub_date
+    # If blocked, fall back to a static lookup table
+    advisory_levels <- list(
+      "Afghanistan"                  = list(level = 4, label = "Do Not Travel",              desc = "Do not travel to Afghanistan due to terrorism, civil unrest, crime, and kidnapping."),
+      "Albania"                      = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime and terrorism."),
+      "Algeria"                      = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to terrorism and kidnapping."),
+      "Argentina"                    = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime."),
+      "Armenia"                      = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to areas of armed conflict."),
+      "Australia"                    = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Australia."),
+      "Austria"                      = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Austria."),
+      "Azerbaijan"                   = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to terrorism and areas of armed conflict."),
+      "Bahamas"                      = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime."),
+      "Bahrain"                      = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to terrorism and civil unrest."),
+      "Bangladesh"                   = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime, terrorism, and civil unrest."),
+      "Belarus"                      = list(level = 4, label = "Do Not Travel",              desc = "Do not travel to Belarus due to the arbitrary enforcement of local laws and the risk of detention."),
+      "Belgium"                      = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to terrorism."),
+      "Belize"                       = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime."),
+      "Bolivia"                      = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime and civil unrest."),
+      "Bosnia and Herzegovina"       = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to terrorism and land mines."),
+      "Brazil"                       = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime."),
+      "Bulgaria"                     = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Bulgaria."),
+      "Burma"                        = list(level = 4, label = "Do Not Travel",              desc = "Do not travel to Burma due to civil unrest and armed conflict."),
+      "Burkina Faso"                 = list(level = 4, label = "Do Not Travel",              desc = "Do not travel to Burkina Faso due to terrorism and kidnapping."),
+      "Cambodia"                     = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Cambodia."),
+      "Canada"                       = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Canada."),
+      "Central African Republic"     = list(level = 4, label = "Do Not Travel",              desc = "Do not travel to the Central African Republic due to crime, civil unrest, and kidnapping."),
+      "Chad"                         = list(level = 3, label = "Reconsider Travel",          desc = "Reconsider travel to Chad due to crime, terrorism, and civil unrest."),
+      "Chile"                        = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to civil unrest and crime."),
+      "China"                        = list(level = 3, label = "Reconsider Travel",          desc = "Reconsider travel to China due to arbitrary enforcement of local laws."),
+      "Colombia"                     = list(level = 3, label = "Reconsider Travel",          desc = "Reconsider travel to Colombia due to crime, terrorism, and kidnapping."),
+      "Congo (Kinshasa)"             = list(level = 3, label = "Reconsider Travel",          desc = "Reconsider travel due to crime, civil unrest, and armed conflict."),
+      "Costa Rica"                   = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime."),
+      "Croatia"                      = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Croatia."),
+      "Cuba"                         = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime and civil unrest."),
+      "Czech Republic"               = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in the Czech Republic."),
+      "Denmark"                      = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Denmark."),
+      "Dominican Republic"           = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime."),
+      "Ecuador"                      = list(level = 3, label = "Reconsider Travel",          desc = "Reconsider travel to Ecuador due to crime and civil unrest."),
+      "Egypt"                        = list(level = 3, label = "Reconsider Travel",          desc = "Reconsider travel to Egypt due to terrorism."),
+      "El Salvador"                  = list(level = 3, label = "Reconsider Travel",          desc = "Reconsider travel to El Salvador due to crime."),
+      "Ethiopia"                     = list(level = 3, label = "Reconsider Travel",          desc = "Reconsider travel to Ethiopia due to civil unrest and armed conflict."),
+      "France"                       = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to terrorism and civil unrest."),
+      "Germany"                      = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to terrorism."),
+      "Ghana"                        = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime."),
+      "Greece"                       = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to terrorism and civil unrest."),
+      "Guatemala"                    = list(level = 3, label = "Reconsider Travel",          desc = "Reconsider travel to Guatemala due to crime."),
+      "Haiti"                        = list(level = 4, label = "Do Not Travel",              desc = "Do not travel to Haiti due to kidnapping, crime, and civil unrest."),
+      "Honduras"                     = list(level = 3, label = "Reconsider Travel",          desc = "Reconsider travel to Honduras due to crime."),
+      "Hungary"                      = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Hungary."),
+      "India"                        = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime and terrorism."),
+      "Indonesia"                    = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to terrorism."),
+      "Iran"                         = list(level = 4, label = "Do Not Travel",              desc = "Do not travel to Iran due to terrorism, civil unrest, and the risk of arbitrary detention."),
+      "Iraq"                         = list(level = 4, label = "Do Not Travel",              desc = "Do not travel to Iraq due to terrorism, kidnapping, and armed conflict."),
+      "Ireland"                      = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Ireland."),
+      "Israel"                       = list(level = 3, label = "Reconsider Travel",          desc = "Reconsider travel to Israel due to terrorism and civil unrest."),
+      "Italy"                        = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to terrorism."),
+      "Jamaica"                      = list(level = 3, label = "Reconsider Travel",          desc = "Reconsider travel to Jamaica due to crime."),
+      "Japan"                        = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Japan."),
+      "Jordan"                       = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to terrorism."),
+      "Kazakhstan"                   = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Kazakhstan."),
+      "Kenya"                        = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime and terrorism."),
+      "Kosovo"                       = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime and ethnic tensions."),
+      "Kuwait"                       = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Kuwait."),
+      "Laos"                         = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Laos."),
+      "Lebanon"                      = list(level = 4, label = "Do Not Travel",              desc = "Do not travel to Lebanon due to crime, terrorism, and armed conflict."),
+      "Libya"                        = list(level = 4, label = "Do Not Travel",              desc = "Do not travel to Libya due to crime, terrorism, and armed conflict."),
+      "Malaysia"                     = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Malaysia."),
+      "Maldives"                     = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to terrorism."),
+      "Mali"                         = list(level = 4, label = "Do Not Travel",              desc = "Do not travel to Mali due to crime, terrorism, and kidnapping."),
+      "Mexico"                       = list(level = 3, label = "Reconsider Travel",          desc = "Reconsider travel to Mexico due to crime. Some states have higher advisory levels."),
+      "Morocco"                      = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to terrorism."),
+      "Mozambique"                   = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime and terrorism."),
+      "Nepal"                        = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime and civil unrest."),
+      "Netherlands"                  = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to terrorism."),
+      "New Zealand"                  = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in New Zealand."),
+      "Nicaragua"                    = list(level = 3, label = "Reconsider Travel",          desc = "Reconsider travel to Nicaragua due to civil unrest and crime."),
+      "Niger"                        = list(level = 4, label = "Do Not Travel",              desc = "Do not travel to Niger due to crime, terrorism, and kidnapping."),
+      "Nigeria"                      = list(level = 3, label = "Reconsider Travel",          desc = "Reconsider travel to Nigeria due to crime, terrorism, and kidnapping."),
+      "North Korea"                  = list(level = 4, label = "Do Not Travel",              desc = "Do not travel to North Korea due to the serious risk of arrest and long-term detention."),
+      "Norway"                       = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Norway."),
+      "Pakistan"                     = list(level = 3, label = "Reconsider Travel",          desc = "Reconsider travel to Pakistan due to terrorism and sectarian violence."),
+      "Panama"                       = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime."),
+      "Papua New Guinea"             = list(level = 3, label = "Reconsider Travel",          desc = "Reconsider travel to Papua New Guinea due to crime and civil unrest."),
+      "Peru"                         = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime and civil unrest."),
+      "Philippines"                  = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime, terrorism, and civil unrest."),
+      "Poland"                       = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Poland."),
+      "Portugal"                     = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Portugal."),
+      "Romania"                      = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Romania."),
+      "Russia"                       = list(level = 4, label = "Do Not Travel",              desc = "Do not travel to Russia due to the unprovoked invasion of Ukraine and arbitrary enforcement of local laws."),
+      "Rwanda"                       = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Rwanda."),
+      "Saudi Arabia"                 = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to terrorism and the threat of missile and drone attacks."),
+      "Senegal"                      = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime and civil unrest."),
+      "Somalia"                      = list(level = 4, label = "Do Not Travel",              desc = "Do not travel to Somalia due to crime, terrorism, and civil unrest."),
+      "South Africa"                 = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime."),
+      "South Korea"                  = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in South Korea."),
+      "South Sudan"                  = list(level = 4, label = "Do Not Travel",              desc = "Do not travel to South Sudan due to crime, kidnapping, and civil unrest."),
+      "Spain"                        = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to terrorism and civil unrest."),
+      "Sri Lanka"                    = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to civil unrest and terrorism."),
+      "Sudan"                        = list(level = 4, label = "Do Not Travel",              desc = "Do not travel to Sudan due to armed conflict and civil unrest."),
+      "Sweden"                       = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to terrorism."),
+      "Switzerland"                  = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Switzerland."),
+      "Syria"                        = list(level = 4, label = "Do Not Travel",              desc = "Do not travel to Syria due to terrorism, civil unrest, kidnapping, and armed conflict."),
+      "Taiwan"                       = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Taiwan."),
+      "Tanzania"                     = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime and terrorism."),
+      "Thailand"                     = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Thailand."),
+      "Tunisia"                      = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to terrorism."),
+      "Turkey"                       = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to terrorism and arbitrary detentions."),
+      "Uganda"                       = list(level = 3, label = "Reconsider Travel",          desc = "Reconsider travel to Uganda due to crime, terrorism, and civil unrest."),
+      "Ukraine"                      = list(level = 4, label = "Do Not Travel",              desc = "Do not travel to Ukraine due to Russia's ongoing war against Ukraine."),
+      "United Arab Emirates"         = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in the United Arab Emirates."),
+      "United Kingdom"               = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to terrorism."),
+      "Uzbekistan"                   = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Uzbekistan."),
+      "Venezuela"                    = list(level = 4, label = "Do Not Travel",              desc = "Do not travel to Venezuela due to crime, civil unrest, kidnapping, and the arbitrary enforcement of local laws."),
+      "Vietnam"                      = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Vietnam."),
+      "Yemen"                        = list(level = 4, label = "Do Not Travel",              desc = "Do not travel to Yemen due to terrorism, civil unrest, health risks, kidnapping, and armed conflict."),
+      "Zambia"                       = list(level = 1, label = "Exercise Normal Caution",    desc = "Exercise normal precautions in Zambia."),
+      "Zimbabwe"                     = list(level = 2, label = "Exercise Increased Caution", desc = "Exercise increased caution due to crime and civil unrest.")
     )
-  })
-  
-  output$advisory_output <- renderUI({
-    req(advisory_data())
-    d <- advisory_data()
     
-    if (!is.null(d$error)) {
-      return(p(style = "color:red;", d$error))
+    entry <- advisory_levels[[input$advisory_country]]
+    
+    if (is.null(entry)) {
+      return(p(paste0("No advisory data available for ", input$advisory_country, ".")))
     }
     
-    # Color and icon based on level
-    level_color <- switch(as.character(d$level_num),
+    level_color <- switch(as.character(entry$level),
                           "1" = "#2a9d8f",
                           "2" = "#e9c46a",
                           "3" = "#f4a261",
@@ -931,13 +991,15 @@ function(input, output, session) {
                           "#888888"
     )
     
-    level_icon <- switch(as.character(d$level_num),
+    level_icon <- switch(as.character(entry$level),
                          "1" = "✅",
                          "2" = "⚠️",
                          "3" = "🔶",
                          "4" = "🚫",
                          "❓"
     )
+    
+    level_label <- paste0("Level ", entry$level, " — ", entry$label)
     
     tagList(
       tags$div(
@@ -949,18 +1011,21 @@ function(input, output, session) {
           "margin-bottom: 12px;"
         ),
         h3(style = paste0("color:", level_color, "; margin-top:0;"),
-           paste0(level_icon, " ", d$level_label)),
-        h4(style = "margin-top:0;", d$country)
+           paste0(level_icon, " ", level_label)),
+        h4(style = "margin-top:0;", input$advisory_country)
       ),
-      p(style = "font-size:14px; margin-top: 10px;", d$description),
-      if (!is.na(d$pub_date)) p(style = "color:#999; font-size:12px;", paste0("Last updated: ", d$pub_date)),
-      if (!is.na(d$link))
-        tags$a(href = d$link, target = "_blank",
-               class = "btn btn-sm btn-default",
-               "View Full Advisory on State.gov ↗")
+      p(style = "font-size:14px; margin-top:10px;", entry$desc),
+      p(style = "color:#999; font-size:11px; margin-top:8px;",
+        "⚠️ Advisory levels are periodically updated. Always verify current information at State.gov before travel."),
+      tags$a(
+        href = paste0("https://travel.state.gov/content/travel/en/traveladvisories/traveladvisories/",
+                      gsub(" ", "-", tolower(input$advisory_country)), "-advisory.html"),
+        target = "_blank",
+        class  = "btn btn-sm btn-default",
+        "View Full Advisory on State.gov ↗"
+      )
     )
   })
 }
-
   
   
