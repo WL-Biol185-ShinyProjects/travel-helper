@@ -35,6 +35,8 @@ airfare_data <- read.csv("airfare_data.csv") %>%
     city2    = trimws(city2)
   )
 
+travel_quiz <- read.csv("Worldwide_Travel_Cities_Dataset.csv")
+
 carrier_names <- c(
   "AA" = "American Airlines",    "AS" = "Alaska Airlines",
   "B6" = "JetBlue Airways",      "DL" = "Delta Air Lines",
@@ -120,14 +122,6 @@ carrier_names_flights <- c(
 
 final_flights <- final_flights %>%
   mutate(MKT_UNIQUE_CARRIER = carrier_names_flights[MKT_UNIQUE_CARRIER])
-
-numeric_to_time <- function(x) {
-  hours   <- x %/% 100
-  minutes <- x %%  100
-  as.POSIXct(sprintf("%02d:%02d", hours, minutes), format = "%H:%M")
-}
-dep_times <- numeric_to_time(final_flights$CRS_DEP_TIME)
-del_times <- numeric_to_time(final_flights$DEP_TIME)
 
 # --- UI ---
 
@@ -360,21 +354,24 @@ dashboardPage(
       tabItem(tabName = "airports",
               fluidRow(
                 box(
-                  title = "What is the Best Airport to Fly into?", status = "primary", solidHeader = TRUE,
+                  title = "What is the Best Airport to Fly into?",
                   width = 8,
                   plotOutput("percentage_on_time", height = 400)
                 ),
-                box(width = 4)
-              )
-      ),
+                box(
+                  title = "Which airport had the most cancellations in 2025?",
+                  width = 8,
+                  plotOutput("airport_cancellation_plot", height = 400)
+                  )
+                )
+              ),
       
       # --- Airlines tab ---
       tabItem(tabName = "airlines",
               fluidRow(
-                box(  plotOutput("delay_plot")
+                box(plotOutput("delay_plot")
                 ), 
-                box(
-                   plotOutput("cancellation_plot")
+                box(plotOutput("cancellation_plot")
                     ),
               )
       ),
