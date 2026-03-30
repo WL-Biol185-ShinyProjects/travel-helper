@@ -10,6 +10,7 @@ library(scales)
 library(lubridate)
 
 # Data loading
+airports_busy <- read.csv("airports_busy.csv")
 UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
 UNESCO <- UNESCO %>% mutate(across(where(is.list), as.character))
 passport_info <- read.csv("passport-index-tidy.csv") 

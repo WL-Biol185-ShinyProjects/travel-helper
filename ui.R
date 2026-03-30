@@ -9,6 +9,7 @@ library(lubridate)
 
 
 # Data loading
+airports_busy <- read.csv("airports_busy.csv")
 passport_info <- read.csv("passport-index-tidy.csv")
 currencyVcountry <- read.csv("currencyVcountry.csv")
 vaccinationVcountry <- read.csv("vaccinationVcountry_correct.csv")
