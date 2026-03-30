@@ -276,25 +276,47 @@ dashboardPage(
       tabItem(tabName = "airports",
               fluidRow(
                 box(
-                  title = "What is the Best Airport to Fly into?",
-                  width = 8,
-                  plotOutput("percentage_on_time", height = 400)
-                ),
-                box(
-                  title = "Which airport had the most cancellations in 2025?",
-                  width = 8,
-                  plotOutput("airport_cancellation_plot", height = 400)
+                  width = 12,
+                  selectizeInput(
+                    inputId = "airport_question",
+                    label = "What would you like to explore?",
+                    choices = c(
+                      "What is the Best Airport to Fly into?" = "on_time",
+                      "Which airport had the most cancellations in 2025?" = "cancellations"
+                    ),
+                    options = list(placeholder = "Select a question...")
                   )
                 )
               ),
+              fluidRow(
+                box(
+                  width = 12,
+                  plotOutput("airport_plot", height = 400)
+                )
+              )
+      ),
       
       # --- Airlines tab ---
       tabItem(tabName = "airlines",
               fluidRow(
-                box(plotOutput("delay_plot")
-                ), 
-                box(plotOutput("cancellation_plot")
+                box(
+                  width = 12,
+                  selectizeInput(
+                    inputId = "airline_question",
+                    label = "What would you like to explore?",
+                    choices = c(
+                      "Which airlines delay flights the most?" = "delays",
+                      "Which airlines cancel flights the most?" = "cancellations"
                     ),
+                    options = list(placeholder = "Select a question...")
+                  )
+                )
+              ),
+              fluidRow(
+                box(
+                  width = 12,
+                  plotOutput("airline_plot", height = 400)
+                )
               )
       ),
       

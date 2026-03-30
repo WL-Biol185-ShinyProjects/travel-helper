@@ -162,42 +162,94 @@ function(input, output, session) {
   
   
   # Airports chart
-  output$percentage_on_time <- renderPlot({
+  output$airport_plot <- renderPlot({
     
-    avg_on_time <- mean(arrival_2025$pct_on_time, na.rm = TRUE)
-    
-    ggplot(arrival_2025, aes(x = airport, y = pct_on_time, fill = pct_on_time)) +
-      geom_col(width = 0.7) +
-      geom_text(
-        aes(label = paste0(round(pct_on_time, 1), "%")),
-        hjust = -0.15, size = 3.5, color = "#333333"
-      ) +
-      coord_flip() +
-      geom_hline(yintercept = avg_on_time, linetype = "dashed", color = "#C84B8F", linewidth = 0.8) +
-      annotate("text", y = avg_on_time + 0.2, x = 0.6,
-               label = paste0("Avg: ", round(avg_on_time, 1), "%"),
-               color = "#C84B8F", size = 3.2, hjust = 0) +
-      scale_fill_gradient(low = "#f4a261", high = "#2a9d8f") +
-      scale_y_continuous(
-        expand = expansion(mult = c(0, 0.12)),
-        labels = label_percent(scale = 1)
-      ) +
-      labs(
-        title = "Airports Ranked by On-Time Arrival Percentage",
-        subtitle = "% of flights arriving on time · Dashed line = overall average",
-        x = NULL, y = NULL,
-        caption = "Source: arrival_2025 dataset"
-      ) +
-      theme_minimal(base_size = 13) +
-      theme(
-        plot.title         = element_text(face = "bold", size = 16),
-        plot.subtitle      = element_text(color = "#666666", size = 11),
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor   = element_blank(),
-        legend.position    = "none",
-        plot.caption       = element_text(color = "#aaaaaa", size = 9)
-      )
+    if (input$airport_question == "on_time") {
+      
+      avg_on_time <- mean(arrival_2025$pct_on_time, na.rm = TRUE)
+      
+      ggplot(arrival_2025, aes(x = airport, y = pct_on_time, fill = pct_on_time)) +
+        geom_col(width = 0.7) +
+        geom_text(
+          aes(label = paste0(round(pct_on_time, 1), "%")),
+          hjust = -0.15, size = 3.5, color = "#333333"
+        ) +
+        coord_flip() +
+        geom_hline(yintercept = avg_on_time, linetype = "dashed", color = "#C84B8F", linewidth = 0.8) +
+        annotate("text", y = avg_on_time + 0.2, x = 0.6,
+                 label = paste0("Avg: ", round(avg_on_time, 1), "%"),
+                 color = "#C84B8F", size = 3.2, hjust = 0) +
+        scale_fill_gradient(low = "#f4a261", high = "#2a9d8f") +
+        scale_y_continuous(
+          expand = expansion(mult = c(0, 0.12)),
+          labels = label_percent(scale = 1)
+        ) +
+        labs(
+          title = "Airports Ranked by On-Time Arrival Percentage",
+          subtitle = "% of flights arriving on time · Dashed line = overall average",
+          x = NULL, y = NULL,
+          caption = "Source: arrival_2025 dataset"
+        ) +
+        theme_minimal(base_size = 13) +
+        theme(
+          plot.title         = element_text(face = "bold", size = 16),
+          plot.subtitle      = element_text(color = "#666666", size = 11),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor   = element_blank(),
+          legend.position    = "none",
+          plot.caption       = element_text(color = "#aaaaaa", size = 9)
+        )
+      
+    } else if (input$airport_question == "cancellations") {
+      
+      airport_cancel_summary <- final_flights %>%
+        group_by(ORIGIN_CITY_NAME) %>%
+        summarise(
+          total_flights     = n(),
+          cancelled_flights = sum(CANCELLED == 1.00, na.rm = TRUE),
+          cancellation_pct  = cancelled_flights / total_flights * 100
+        ) %>%
+        filter(total_flights >= 30) %>%
+        arrange(desc(cancellation_pct)) %>%
+        slice_head(n = 20) %>%
+        arrange(cancellation_pct) %>%
+        mutate(ORIGIN_CITY_NAME = fct_inorder(ORIGIN_CITY_NAME))
+      
+      avg_cancellation <- mean(airport_cancel_summary$cancellation_pct)
+      
+      ggplot(airport_cancel_summary, aes(x = cancellation_pct, y = ORIGIN_CITY_NAME, fill = cancellation_pct)) +
+        geom_col(width = 0.7) +
+        geom_text(
+          aes(label = paste0(round(cancellation_pct, 1), "%")),
+          hjust = -0.15, size = 3.5, color = "#333333"
+        ) +
+        geom_vline(xintercept = avg_cancellation, linetype = "dashed", color = "#C84B8F", linewidth = 0.8) +
+        annotate("text", x = avg_cancellation + 0.2, y = 0.6,
+                 label = paste0("Avg: ", round(avg_cancellation, 1), "%"),
+                 color = "#C84B8F", size = 3.2, hjust = 0) +
+        scale_fill_gradient(low = "#9BD4C5", high = "#4B0082") +
+        scale_x_continuous(
+          expand = expansion(mult = c(0, 0.12)),
+          labels = label_percent(scale = 1)
+        ) +
+        labs(
+          title = "Which Airports Have the Most Cancellations?",
+          subtitle = "Top 20 airports by cancellation rate · Dashed line = overall average",
+          x = NULL, y = NULL,
+          caption = "Source: final_flights dataset"
+        ) +
+        theme_minimal(base_size = 13) +
+        theme(
+          plot.title         = element_text(face = "bold", size = 16),
+          plot.subtitle      = element_text(color = "#666666", size = 11),
+          panel.grid.major.y = element_blank(),
+          panel.grid.minor   = element_blank(),
+          legend.position    = "none",
+          plot.caption       = element_text(color = "#aaaaaa", size = 9)
+        )
+    }
   })
+  
   
   # UNESCO coords
   unesco_coords <- read_excel("UNESCO_COORDS.xlsx")
@@ -548,99 +600,102 @@ function(input, output, session) {
     
   })
   
-  output$delay_plot <- renderPlot({
+  output$airline_plot <- renderPlot({
     
-    delay_summary <- final_flights %>%
-      group_by(MKT_UNIQUE_CARRIER) %>%
-      summarise(
-        total_flights = n(),
-        delayed_flights = sum(DEP_DELAY > 15, na.rm = TRUE),
-        delay_pct = delayed_flights / total_flights * 100
-      ) %>%
-      filter(total_flights >= 30) %>%
-      arrange(delay_pct) %>%
-      mutate(MKT_UNIQUE_CARRIER = fct_inorder(MKT_UNIQUE_CARRIER))
-    
-    avg_delay <- mean(delay_summary$delay_pct)
-    
-    ggplot(delay_summary, aes(x = delay_pct, y = MKT_UNIQUE_CARRIER, fill = delay_pct)) +
-      geom_col(width = 0.7) +
-      geom_text(
-        aes(label = paste0(round(delay_pct, 1), "%")),
-        hjust = -0.15, size = 3.5, color = "#333333"
-      ) +
-      geom_vline(xintercept = avg_delay, linetype = "dashed", color = "#E05C2A", linewidth = 0.8) +
-      annotate("text", x = avg_delay + 0.5, y = 0.6,
-               label = paste0("Avg: ", round(avg_delay, 1), "%"),
-               color = "#E05C2A", size = 3.2, hjust = 0) +
-      scale_fill_gradient(low = "#43AA8B", high = "#E05C2A") +
-      scale_x_continuous(
-        expand = expansion(mult = c(0, 0.12)),
-        labels = label_percent(scale = 1)
-      ) +
-      labs(
-        title = "Which Airlines Delay Flights the Most?",
-        subtitle = "% of flights delayed more than 10 minutes · Dashed line = overall average",
-        x = NULL, y = NULL,
-        caption = "Source: final_flights dataset"
-      ) +
-      theme_minimal(base_size = 13) +
-      theme(
-        plot.title = element_text(face = "bold", size = 16),
-        plot.subtitle = element_text(color = "#666666", size = 11),
-        panel.grid.major.y = element_blank(),
-        panel.grid.minor = element_blank(),
-        legend.position = "none",
-        plot.caption = element_text(color = "#aaaaaa", size = 9)
-      )
+    if (input$airline_question == "delays") {
+      
+      delay_summary <- final_flights %>%
+        group_by(MKT_UNIQUE_CARRIER) %>%
+        summarise(
+          total_flights   = n(),
+          delayed_flights = sum(DEP_DELAY > 15, na.rm = TRUE),
+          delay_pct       = delayed_flights / total_flights * 100
+        ) %>%
+        filter(total_flights >= 30) %>%
+        arrange(delay_pct) %>%
+        mutate(MKT_UNIQUE_CARRIER = fct_inorder(MKT_UNIQUE_CARRIER))
+      
+      avg_delay <- mean(delay_summary$delay_pct)
+      
+      ggplot(delay_summary, aes(x = delay_pct, y = MKT_UNIQUE_CARRIER, fill = delay_pct)) +
+        geom_col(width = 0.7) +
+        geom_text(
+          aes(label = paste0(round(delay_pct, 1), "%")),
+          hjust = -0.15, size = 3.5, color = "#333333"
+        ) +
+        geom_vline(xintercept = avg_delay, linetype = "dashed", color = "#E05C2A", linewidth = 0.8) +
+        annotate("text", x = avg_delay + 0.5, y = 0.6,
+                 label = paste0("Avg: ", round(avg_delay, 1), "%"),
+                 color = "#E05C2A", size = 3.2, hjust = 0) +
+        scale_fill_gradient(low = "#43AA8B", high = "#E05C2A") +
+        scale_x_continuous(
+          expand = expansion(mult = c(0, 0.12)),
+          labels = label_percent(scale = 1)
+        ) +
+        labs(
+          title = "Which Airlines Delay Flights the Most?",
+          subtitle = "% of flights delayed more than 15 minutes · Dashed line = overall average",
+          x = NULL, y = NULL,
+          caption = "Source: final_flights dataset"
+        ) +
+        theme_minimal(base_size = 13) +
+        theme(
+          plot.title         = element_text(face = "bold", size = 16),
+          plot.subtitle      = element_text(color = "#666666", size = 11),
+          panel.grid.major.y = element_blank(),
+          panel.grid.minor   = element_blank(),
+          legend.position    = "none",
+          plot.caption       = element_text(color = "#aaaaaa", size = 9)
+        )
+      
+    } else if (input$airline_question == "cancellations") {
+      
+      cancellation_summary <- final_flights %>%
+        group_by(MKT_UNIQUE_CARRIER) %>%
+        summarise(
+          total_flights     = n(),
+          cancelled_flights = sum(CANCELLED == 1.00, na.rm = TRUE),
+          cancellation_pct  = cancelled_flights / total_flights * 100
+        ) %>%
+        filter(total_flights >= 30) %>%
+        arrange(cancellation_pct) %>%
+        mutate(MKT_UNIQUE_CARRIER = fct_inorder(MKT_UNIQUE_CARRIER))
+      
+      avg_cancellation <- mean(cancellation_summary$cancellation_pct)
+      
+      ggplot(cancellation_summary, aes(x = cancellation_pct, y = MKT_UNIQUE_CARRIER, fill = cancellation_pct)) +
+        geom_col(width = 0.7) +
+        geom_text(
+          aes(label = paste0(round(cancellation_pct, 1), "%")),
+          hjust = -0.15, size = 3.5, color = "#333333"
+        ) +
+        geom_vline(xintercept = avg_cancellation, linetype = "dashed", color = "#C84B8F", linewidth = 0.8) +
+        annotate("text", x = avg_cancellation + 0.5, y = 0.6,
+                 label = paste0("Avg: ", round(avg_cancellation, 1), "%"),
+                 color = "#C84B8F", size = 3.2, hjust = 0) +
+        scale_fill_gradient(low = "#9BD4C5", high = "#4B0082") +
+        scale_x_continuous(
+          expand = expansion(mult = c(0, 0.12)),
+          labels = label_percent(scale = 1)
+        ) +
+        labs(
+          title = "Which Airlines Cancel Flights the Most?",
+          subtitle = "% of flights cancelled · Dashed line = overall average",
+          x = NULL, y = NULL,
+          caption = "Source: final_flights dataset"
+        ) +
+        theme_minimal(base_size = 13) +
+        theme(
+          plot.title         = element_text(face = "bold", size = 16),
+          plot.subtitle      = element_text(color = "#666666", size = 11),
+          panel.grid.major.y = element_blank(),
+          panel.grid.minor   = element_blank(),
+          legend.position    = "none",
+          plot.caption       = element_text(color = "#aaaaaa", size = 9)
+        )
+    }
   })
   
-  output$cancellation_plot <- renderPlot({
-    
-    cancellation_summary <- final_flights %>%
-      group_by(MKT_UNIQUE_CARRIER) %>%
-      summarise(
-        total_flights = n(),
-        cancelled_flights = sum(CANCELLED == 1.00, na.rm = TRUE),
-        cancellation_pct = cancelled_flights / total_flights * 100
-      ) %>%
-      filter(total_flights >= 30) %>%
-      arrange(cancellation_pct) %>%
-      mutate(MKT_UNIQUE_CARRIER = fct_inorder(MKT_UNIQUE_CARRIER))
-    
-    avg_cancellation <- mean(cancellation_summary$cancellation_pct)
-    
-    ggplot(cancellation_summary, aes(x = cancellation_pct, y = MKT_UNIQUE_CARRIER, fill = cancellation_pct)) +
-      geom_col(width = 0.7) +
-      geom_text(
-        aes(label = paste0(round(cancellation_pct, 1), "%")),
-        hjust = -0.15, size = 3.5, color = "#333333"
-      ) +
-      geom_vline(xintercept = avg_cancellation, linetype = "dashed", color = "#C84B8F", linewidth = 0.8) +
-      annotate("text", x = avg_cancellation + 0.5, y = 0.6,
-               label = paste0("Avg: ", round(avg_cancellation, 1), "%"),
-               color = "#C84B8F", size = 3.2, hjust = 0) +
-      scale_fill_gradient(low = "#9BD4C5", high = "#4B0082") +
-      scale_x_continuous(
-        expand = expansion(mult = c(0, 0.12)),
-        labels = label_percent(scale = 1)
-      ) +
-      labs(
-        title = "Which Airlines Cancel Flights the Most?",
-        subtitle = "% of flights cancelled · Dashed line = overall average",
-        x = NULL, y = NULL,
-        caption = "Source: final_flights dataset"
-      ) +
-      theme_minimal(base_size = 13) +
-      theme(
-        plot.title = element_text(face = "bold", size = 16),
-        plot.subtitle = element_text(color = "#666666", size = 11),
-        panel.grid.major.y = element_blank(),
-        panel.grid.minor = element_blank(),
-        legend.position = "none",
-        plot.caption = element_text(color = "#aaaaaa", size = 9)
-      )
-  })
   
   output$busiest_days_plot <- renderPlot({
     
@@ -677,55 +732,6 @@ function(input, output, session) {
         panel.grid.minor = element_blank(),
         legend.position = "none",
         plot.caption = element_text(color = "#aaaaaa", size = 9)
-      )
-  })
-  
-  output$airport_cancellation_plot <- renderPlot({
-    
-    airport_cancel_summary <- final_flights %>%
-      group_by(ORIGIN_CITY_NAME) %>%
-      summarise(
-        total_flights    = n(),
-        cancelled_flights = sum(CANCELLED == 1.00, na.rm = TRUE),
-        cancellation_pct  = cancelled_flights / total_flights * 100
-      ) %>%
-      filter(total_flights >= 30) %>%
-      arrange(desc(cancellation_pct)) %>%
-      slice_head(n = 20) %>%
-      arrange(cancellation_pct) %>%
-      mutate(ORIGIN_CITY_NAME = fct_inorder(ORIGIN_CITY_NAME))
-    
-    avg_cancellation <- mean(airport_cancel_summary$cancellation_pct)
-    
-    ggplot(airport_cancel_summary, aes(x = cancellation_pct, y = ORIGIN_CITY_NAME, fill = cancellation_pct)) +
-      geom_col(width = 0.7) +
-      geom_text(
-        aes(label = paste0(round(cancellation_pct, 1), "%")),
-        hjust = -0.15, size = 3.5, color = "#333333"
-      ) +
-      geom_vline(xintercept = avg_cancellation, linetype = "dashed", color = "#C84B8F", linewidth = 0.8) +
-      annotate("text", x = avg_cancellation + 0.2, y = 0.6,
-               label = paste0("Avg: ", round(avg_cancellation, 1), "%"),
-               color = "#C84B8F", size = 3.2, hjust = 0) +
-      scale_fill_gradient(low = "#9BD4C5", high = "#4B0082") +
-      scale_x_continuous(
-        expand = expansion(mult = c(0, 0.12)),
-        labels = label_percent(scale = 1)
-      ) +
-      labs(
-        title = "Which Airports Have the Most Cancellations?",
-        subtitle = "Top 20 airports by cancellation rate · Dashed line = overall average",
-        x = NULL, y = NULL,
-        caption = "Source: final_flights dataset"
-      ) +
-      theme_minimal(base_size = 13) +
-      theme(
-        plot.title    = element_text(face = "bold", size = 16),
-        plot.subtitle = element_text(color = "#666666", size = 11),
-        panel.grid.major.y = element_blank(),
-        panel.grid.minor   = element_blank(),
-        legend.position    = "none",
-        plot.caption       = element_text(color = "#aaaaaa", size = 9)
       )
   })
   
