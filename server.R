@@ -1,4 +1,5 @@
 library(shiny)
+library(shinydashboard)
 library(ggplot2)
 library(tidyverse)
 library(readxl)
@@ -8,6 +9,7 @@ library(jsonlite)
 library(leaflet)
 library(scales)
 library(lubridate)
+library(shinyjs)
 
 # Data loading
 UNESCO <- read_excel("UNESCO_World_Heritage_Sites.xlsx")
@@ -109,19 +111,97 @@ carrier_names_flights <- c(
 final_flights <- final_flights %>%
   mutate(MKT_UNIQUE_CARRIER = carrier_names_flights[MKT_UNIQUE_CARRIER])
 
-<<<<<<< HEAD
+
 # Convert to POSIXct (today's date + time)
-numeric_to_time <- function(x) {
-  hours   <- x %/% 100
-  minutes <- x %%  100
-  as.POSIXct(sprintf("%02d:%02d", hours, minutes), format = "%H:%M")
+#numeric_to_time <- function(x) {
+ # hours   <- x %/% 100
+ # minutes <- x %%  100
+ # as.POSIXct(sprintf("%02d:%02d", hours, minutes), format = "%H:%M")
+#}
+#dep_times <- numeric_to_time(final_flights$CRS_DEP_TIME)
+#del_times <- numeric_to_time(final_flights$DEP_TIME)
+
+# ── Parse JSON columns once at startup ────────────────────────────────────────
+# avg_temp_monthly  → annual average temperature (numeric)
+# ideal_durations   → list of duration strings
+
+travel_quiz$annual_avg_temp <- sapply(travel_quiz$avg_temp_monthly, function(x) {
+  tryCatch({
+    parsed <- fromJSON(x)
+    mean(sapply(parsed, function(m) m$avg), na.rm = TRUE)
+  }, error = function(e) NA_real_)
+})
+
+travel_quiz$durations_list <- lapply(travel_quiz$ideal_durations, function(x) {
+  tryCatch(fromJSON(x), error = function(e) character(0))
+})
+
+# Clean region labels for display
+travel_quiz$region_label <- dplyr::recode(travel_quiz$region,
+                                          africa        = "Africa",
+                                          asia          = "Asia",
+                                          europe        = "Europe",
+                                          middle_east   = "Middle East",
+                                          north_america = "North America",
+                                          oceania       = "Oceania",
+                                          south_america = "South America"
+)
+
+# ── Constants ──────────────────────────────────────────────────────────────────
+
+VIBE_ATTRS <- c("culture", "adventure", "nature", "beaches",
+                "nightlife", "cuisine", "wellness", "urban", "seclusion")
+
+VIBE_LABELS <- c(
+  culture   = "🎭 Culture",   adventure = "🧗 Adventure",
+  nature    = "🌿 Nature",    beaches   = "🏖️ Beaches",
+  nightlife = "🎉 Nightlife", cuisine   = "🍽️ Cuisine",
+  wellness  = "🧘 Wellness",  urban     = "🏙️ Urban",
+  seclusion = "🌄 Seclusion"
+)
+
+# ── Scoring function ───────────────────────────────────────────────────────────
+
+score_cities <- function(region, temp_range, duration, budget, vibe_weights) {
+  df <- travel_quiz
+  
+  # Hard filters
+  if (!is.null(region) && region != "No preference")
+    df <- df[df$region_label == region, ]
+  
+  if (!is.null(budget) && budget != "No preference")
+    df <- df[df$budget_level == budget, ]
+  
+  if (!is.null(duration) && duration != "No preference")
+    df <- df[sapply(df$durations_list, function(d) duration %in% d), ]
+  
+  if (nrow(df) == 0) return(df)
+  
+  # Temperature score (soft, 0–1)
+  if (!is.null(temp_range)) {
+    t_mid  <- mean(temp_range)
+    t_band <- diff(temp_range) / 2 + 5
+    df$temp_score <- 1 - pmin(abs(df$annual_avg_temp - t_mid) / t_band, 1)
+  } else {
+    df$temp_score <- 1
+  }
+  
+  # Vibe score: weighted dot-product (city scores normalised 1–5 → 0–1)
+  total_w <- sum(abs(vibe_weights))
+  if (total_w == 0) {
+    df$vibe_score <- 1
+  } else {
+    vibe_matrix <- as.matrix(df[, names(vibe_weights)])
+    vibe_norm   <- (vibe_matrix - 1) / 4          # 1→0, 5→1
+    weight_norm <- as.numeric(vibe_weights) / total_w
+    df$vibe_score <- as.numeric(vibe_norm %*% weight_norm)
+  }
+  
+  df$total_score <- 0.3 * df$temp_score + 0.7 * df$vibe_score
+  df[order(-df$total_score), ]
 }
-dep_times <- numeric_to_time(final_flights$CRS_DEP_TIME)
-del_times <- numeric_to_time(final_flights$DEP_TIME)
 
 
-=======
->>>>>>> f9a4c3ed1c5318f79a47e53ebe13913fe0e99ea2
 # Server
 function(input, output, session) {
   
@@ -741,6 +821,149 @@ function(input, output, session) {
         panel.grid.minor   = element_blank(),
         legend.position    = "none",
         plot.caption       = element_text(color = "#aaaaaa", size = 9)
+      )
+  })
+  
+  #travel quiz server
+  # Disable temp slider when "any" is checked
+  observe({
+    if (isTRUE(input$temp_any)) {
+      shinyjs::disable("temp_range")
+    } else {
+      shinyjs::enable("temp_range")
+    }
+  })
+  
+  # Score on button press
+  results <- eventReactive(input$go_btn, {
+    vibe_weights <- setNames(
+      sapply(VIBE_ATTRS, function(a) input[[paste0("vibe_", a)]]),
+      VIBE_ATTRS
+    )
+    score_cities(
+      region       = input$region,
+      temp_range   = if (isTRUE(input$temp_any)) NULL else input$temp_range,
+      duration     = input$duration,
+      budget       = input$budget,
+      vibe_weights = vibe_weights
+    )
+  })
+  
+  # ── Results panel ────────────────────────────────────────────────────────────
+  output$results_panel <- renderUI({
+    
+    # Pre-click welcome state
+    if (is.null(input$go_btn) || input$go_btn == 0) {
+      return(div(class = "empty-state",
+                 div(class = "icon", "🗺️"),
+                 h3(style = "color:#264653; margin-top:16px;", "Your matches will appear here"),
+                 p("Fill in your preferences and click", strong("Find My Destinations."))
+      ))
+    }
+    
+    df <- results()
+    
+    if (nrow(df) == 0) {
+      return(div(class = "empty-state",
+                 div(class = "icon", "😕"),
+                 h3("No destinations matched"),
+                 p("Try relaxing your region, budget, or duration filters.")
+      ))
+    }
+    
+    top <- head(df, 10)
+    
+    tagList(
+      # Summary strip
+      div(style = "display:flex; align-items:center; gap:12px; margin-bottom:16px;",
+          div(style = "background:#2a9d8f; color:white; border-radius:10px;
+                     padding:9px 18px; font-weight:700;",
+              paste0("✅ ", nrow(df), " destinations found")
+          ),
+          p(style = "color:#6c757d; margin:0; font-size:.9rem;",
+            paste0("Showing top ", nrow(top), " ranked by your preferences"))
+      ),
+      
+      tabsetPanel(id = "result_tabs",
+                  
+                  # Tab 1: Result cards
+                  tabPanel("🏙️ Top Picks",
+                           br(),
+                           lapply(seq_len(nrow(top)), function(i) {
+                             row  <- top[i, ]
+                             pct  <- round(row$total_score * 100)
+                             durs <- paste(row$durations_list[[1]], collapse = " · ")
+                             
+                             div(class = "result-card",
+                                 div(style = "display:flex; align-items:flex-start;",
+                                     div(class = "result-rank", paste0("#", i)),
+                                     div(style = "flex:1;",
+                                         div(class = "result-city",    row$city),
+                                         div(class = "result-country",
+                                             paste0(row$country, "  ·  ", row$region_label)),
+                                         div(class = "result-desc", row$short_description),
+                                         div(
+                                           span(class = "badge-pill", paste0("💰 ", row$budget_level)),
+                                           span(class = "badge-pill",
+                                                paste0("🌡️ ", round(row$annual_avg_temp, 1), "°C avg")),
+                                           if (nchar(durs) > 0)
+                                             span(class = "badge-pill", paste0("🗓️ ", durs))
+                                         ),
+                                         div(class = "score-bar-wrap",
+                                             div(class = "score-bar", style = paste0("width:", pct, "%;"))
+                                         ),
+                                         div(style = "font-size:.8rem; color:#888; margin-top:3px;",
+                                             paste0("Match score: ", pct, "%"))
+                                     )
+                                 )
+                             )
+                           })
+                  ),
+                  
+                  # Tab 2: Vibe comparison chart
+                  tabPanel("📊 Vibe Comparison",
+                           br(),
+                           p(style = "color:#6c757d; font-size:.9rem;",
+                             "Average vibe scores: your top picks vs. all cities in the dataset"),
+                           plotOutput("vibe_chart", height = "420px")
+                  )
+      )
+    )
+  })
+  
+  # ── Vibe comparison bar chart ─────────────────────────────────────────────────
+  output$vibe_chart <- renderPlot({
+    req(input$go_btn > 0)
+    df <- results()
+    req(nrow(df) > 0)
+    
+    top <- head(df, 10)
+    
+    matched_means <- colMeans(top[, VIBE_ATTRS])
+    all_means     <- colMeans(travel_quiz[, VIBE_ATTRS])
+    
+    plot_df <- data.frame(
+      Attribute = rep(VIBE_LABELS[VIBE_ATTRS], 2),
+      Score     = c(as.numeric(matched_means), as.numeric(all_means)),
+      Group     = rep(c("Your Top Picks", "All Cities"), each = length(VIBE_ATTRS))
+    )
+    plot_df$Attribute <- factor(plot_df$Attribute,
+                                levels = rev(VIBE_LABELS[VIBE_ATTRS]))
+    
+    ggplot(plot_df, aes(x = Attribute, y = Score, fill = Group)) +
+      geom_col(position = position_dodge(width = .7), width = .6) +
+      coord_flip() +
+      scale_fill_manual(values = c("Your Top Picks" = "#2a9d8f",
+                                   "All Cities"     = "#e9c46a")) +
+      scale_y_continuous(limits = c(0, 5), breaks = 1:5) +
+      labs(title = "Vibe Profile: Your Matches vs. All Destinations",
+           x = NULL, y = "Average Score (1–5)", fill = NULL) +
+      theme_minimal(base_size = 13) +
+      theme(
+        plot.title             = element_text(face = "bold", colour = "#264653"),
+        legend.position        = "bottom",
+        panel.grid.major.y     = element_blank(),
+        panel.grid.minor       = element_blank()
       )
   })
   
