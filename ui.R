@@ -6,6 +6,7 @@ library(dplyr)
 library(leaflet)
 library(scales)
 library(lubridate)
+library(shinyjs)
 
 
 # Data loading
@@ -30,6 +31,7 @@ airfare_data <- read.csv("airfare_data.csv") %>%
     city1    = trimws(city1),
     city2    = trimws(city2)
   )
+travel_quiz <- read.csv("Worldwide_Travel_Cities_Dataset.csv")
 
 carrier_names <- c(
   "AA" = "American Airlines",   "AS" = "Alaska Airlines",
@@ -132,7 +134,11 @@ dashboardPage(
       menuItem("Airlines",             tabName = "airlines"),
       menuItem("Pricing and Statistics",              tabName = "pricing"),
       menuItem("Travel Suggestions",   tabName = "travel_suggestions"),
-      menuItem("About Us", tabName="about")
+
+      menuItem("About Us", tabName="about"),
+
+      menuItem("Where Should I Go?",         tabName = "travel_quiz")
+
     )
   ),
   
@@ -394,6 +400,7 @@ dashboardPage(
                   uiOutput("site_image")
                 )
               )
+
       ),
       tabItem(tabName="about",
               fluidRow(
@@ -408,10 +415,183 @@ dashboardPage(
                     )
               )
               
+
+      ), 
       
-    )
+      #Travel quiz tab
+      tabItem(tabName = "travel_quiz",
+              fluidPage(tags$head(tags$style(HTML("
+    :root {
+      --teal:  #2a9d8f;
+      --coral: #e76f51;
+      --navy:  #264653;
+      --sand:  #e9c46a;
+      --light: #f8f9fa;
+      --muted: #6c757d;
+    }
+    body { background: var(--light); font-family: 'Segoe UI', sans-serif; }
+
+    /* Header */
+    .app-header {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--teal) 100%);
+      color: white; padding: 28px 32px 20px;
+      margin-bottom: 28px; border-radius: 0 0 16px 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.18);
+    }
+    .app-header h1 { font-size: 2rem; margin: 0 0 6px; font-weight: 700; }
+    .app-header p  { margin: 0; opacity: .85; font-size: 1rem; }
+
+    /* Quiz cards */
+    .quiz-card {
+      background: white; border-radius: 14px;
+      padding: 20px 24px; margin-bottom: 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.07);
+      border-left: 5px solid var(--teal);
+    }
+    .quiz-card h4 {
+      color: var(--navy); font-weight: 700;
+      margin: 0 0 14px; font-size: 1rem;
+    }
+
+    /* Sliders */
+    .irs--shiny .irs-bar,
+    .irs--shiny .irs-bar-edge { background: var(--teal); border-color: var(--teal); }
+    .irs--shiny .irs-handle    { background: var(--coral); border-color: var(--coral); }
+    .irs--shiny .irs-from,
+    .irs--shiny .irs-to,
+    .irs--shiny .irs-single    { background: var(--navy); }
+
+    /* Go button */
+    #go_btn {
+      background: linear-gradient(135deg, var(--coral), #c1440e);
+      color: white; border: none; border-radius: 10px;
+      padding: 14px 40px; font-size: 1.1rem; font-weight: 700;
+      width: 100%; cursor: pointer;
+      box-shadow: 0 4px 10px rgba(231,111,81,.35);
+      transition: opacity .2s;
+    }
+    #go_btn:hover { opacity: .88; }
+
+    /* Result cards */
+    .result-card {
+      background: white; border-radius: 14px;
+      padding: 18px 22px; margin-bottom: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+      border-left: 6px solid var(--teal);
+    }
+    .result-rank   { font-size: 1.8rem; font-weight: 800; color: var(--coral);
+                     line-height: 1; margin-right: 14px; }
+    .result-city   { font-size: 1.2rem; font-weight: 700; color: var(--navy); }
+    .result-country{ font-size: .88rem; color: var(--muted); margin-bottom: 6px; }
+    .result-desc   { font-size: .92rem; color: #444; margin-bottom: 10px; }
+    .badge-pill {
+      display: inline-block; background: #e8f5f3; color: var(--teal);
+      border-radius: 20px; padding: 3px 11px; font-size: .82rem;
+      font-weight: 600; margin: 2px 3px 2px 0; border: 1px solid #b8e0da;
+    }
+    .score-bar-wrap { background: #eee; border-radius: 6px; height: 9px;
+                      margin-top: 8px; overflow: hidden; }
+    .score-bar { height: 100%; border-radius: 6px;
+                 background: linear-gradient(90deg, var(--teal), var(--sand)); }
+
+    /* Empty states */
+    .empty-state { text-align: center; padding: 70px 20px; color: var(--muted); }
+    .empty-state .icon { font-size: 3.5rem; }
+
+    label { color: var(--navy); font-weight: 600; }
+    .nav-tabs > li > a       { color: var(--navy); font-weight: 600; }
+    .nav-tabs > li.active > a{ color: var(--coral);
+                                border-bottom: 3px solid var(--coral); }
+  "))),
+                       
+                       # ── Header ────────────────────────────────────────────────────────────────
+                       div(class = "app-header",
+                           h1("✈️ Travel Destination Quiz"),
+                           p("Tell us what you're after and we'll match you with your perfect city.")
+                       ),
+                       
+                       fluidRow(
+                         
+                         # ── LEFT: inputs ─────────────────────────────────────────────────────────
+                         column(4,
+                                
+                                # Region
+                                div(class = "quiz-card",
+                                    h4("🌍 Preferred region"),
+                                    selectInput("region", label = NULL,
+                                                choices = c("No preference",
+                                                            "Africa", "Asia", "Europe", "Middle East",
+                                                            "North America", "Oceania", "South America"),
+                                                selected = "No preference")
+                                ),
+                                
+                                # Temperature
+                                div(class = "quiz-card",
+                                    h4("🌡️ Preferred temperature (°C)"),
+                                    sliderInput("temp_range", label = NULL,
+                                                min = -5, max = 35, value = c(15, 28), step = 1, post = "°C"),
+                                    checkboxInput("temp_any", "I don't mind the temperature", value = FALSE)
+                                ),
+                                
+                                # Trip length
+                                div(class = "quiz-card",
+                                    h4("🗓️ Ideal trip length"),
+                                    selectInput("duration", label = NULL,
+                                                choices  = c("No preference", "Weekend", "Short trip",
+                                                             "One week", "Long trip"),
+                                                selected = "No preference")
+                                ),
+                                
+                                # Budget
+                                div(class = "quiz-card",
+                                    h4("💰 Budget level"),
+                                    radioButtons("budget", label = NULL,
+                                                 choices  = c("No preference", "Budget", "Mid-range", "Luxury"),
+                                                 selected = "No preference")
+                                ),
+                                
+                                # Vibe sliders
+                                div(class = "quiz-card",
+                                    h4("🎛️ What matters most to you?"),
+                                    p(style = "color:#666; font-size:.87rem; margin-bottom:14px;",
+                                      "1 = not important → 5 = must-have"),
+                                    sliderInput("vibe_culture",   "🎭 Culture",    1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
+                                    sliderInput("vibe_adventure", "🧗 Adventure",  1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
+                                    sliderInput("vibe_nature",    "🌿 Nature",     1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
+                                    sliderInput("vibe_beaches",   "🏖️ Beaches",   1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
+                                    sliderInput("vibe_nightlife", "🎉 Nightlife",  1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
+                                    sliderInput("vibe_cuisine",   "🍽️ Cuisine",   1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
+                                    sliderInput("vibe_wellness",  "🧘 Wellness",   1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
+                                    sliderInput("vibe_urban",     "🏙️ Urban",     1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
+                                    sliderInput("vibe_seclusion", "🌄 Seclusion",  1, 5, 3, step = 1, ticks = TRUE, width = "100%")
+                                ),
+                                
+                                actionButton("go_btn", "Find My Destinations 🚀")
+                         ),
+                         
+                         # ── RIGHT: results ────────────────────────────────────────────────────────
+                         column(8,
+                                uiOutput("results_panel")
+                         )
+                       )
+                
+              )
+
   )
 )
 )
+)
 
+    
+
+      
+    
+  
+
+
+
+
+
+
+# end dashboardPage
 
