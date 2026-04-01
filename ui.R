@@ -32,9 +32,6 @@ airfare_data <- read.csv("airfare_data.csv") %>%
     city2    = trimws(city2)
   )
 travel_quiz <- read.csv("Worldwide_Travel_Cities_Dataset.csv")
-lily.jpg <- "IMG_0473.JPG"
-mac.jpg <- "14CA98F3-1F2B-48A7-A1FE-09BB5E27DD4B.jpeg"
-maddie.jpg <- "IMG_0464.JPG"
 
 carrier_names <- c(
   "AA" = "American Airlines",   "AS" = "Alaska Airlines",
@@ -423,8 +420,8 @@ dashboardPage(
                   width = 4, status = "info", solidHeader = TRUE,
                   title = "Lily Caldwell '27",
                   tags$img(
-                    src   = "lily.jpg",
-                    width = "100%",
+                    src   = "IMG_0464.JPG",
+                    width = "60%",
                     style = "border-radius: 8px; margin-bottom: 10px;"
                   ),
                   p("Lily is a Neuroscience Major. Her favorite vacation was travelling to Cape Coast, Ghana!"),
@@ -434,8 +431,8 @@ dashboardPage(
                   width = 4, status = "info", solidHeader = TRUE,
                   title = "Mac Palmer '27",
                   tags$img(
-                    src   = "mac.jpg",
-                    width = "100%",
+                    src   = "14CA98F3-1F2B-48A7-A1FE-09BB5E27DD4B.jpeg",
+                    width = "60%",
                     style = "border-radius: 8px; margin-bottom: 10px;"
                   ),
                   p("Mac is an Integrated Engineering with Biology Major. His favorite vacation was going to Punta Cana, Dominican Republic!"),
@@ -445,8 +442,8 @@ dashboardPage(
                   width = 4, status = "info", solidHeader = TRUE,
                   title = "Maddie Montez '27",
                   tags$img(
-                    src   = "maddie.jpg",
-                    width = "100%",
+                    src   = "IMG_0473.JPG",
+                    width = "60%",
                     style = "border-radius: 8px; margin-bottom: 10px;"
                   ),
                   p("Maddie is a Neuroscience Major. Her favorite vacation was visiting Barcelona, Spain!"),
