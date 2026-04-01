@@ -142,9 +142,8 @@ dashboardPage(
       menuItem("Pricing and Statistics",              tabName = "pricing"),
       menuItem("Travel Suggestions",   tabName = "travel_suggestions"),
       menuItem("Where Should I Go?",         tabName = "travel_quiz"),
-      menuItem("About Us", tabName="about")
-
- 
+      menuItem("About Us", tabName="about"), 
+      menuItem("References", tabName="references")
 
     )
   ),
@@ -221,22 +220,7 @@ dashboardPage(
                   h4("Requirement"),
                   verbatimTextOutput("Requirement")
                 ),
-                box(
-                  title = "Currency Info", status = "primary", solidHeader = TRUE,
-                  selectizeInput("Country",
-                                 label = "Destination Country",
-                                 choices = currencyVcountry$Country),
-                  h4("Currency"),
-                  verbatimTextOutput("Currency")
-                ),
-                box(
-                  title = "Vaccination Needed", status = "primary", solidHeader = TRUE,
-                  selectizeInput("country_vaccination",
-                                 label = "Country of Destination",
-                                 choices = vaccinationVcountry$country_vaccination),
-                  h4("Vaccination Required"),
-                  verbatimTextOutput("vaccination_required")
-                ),
+                
                 box(
                   title = "Electrical Adapter & Converter Requirements", status = "primary", solidHeader = TRUE,
                   selectizeInput("origin_country",
@@ -255,6 +239,24 @@ dashboardPage(
                   verbatimTextOutput("adapter_rec"),
                   h4("Converter Recommendation"),
                   verbatimTextOutput("converter_rec")
+                )
+              ),
+              fluidRow(
+                box(
+                  title = "Currency Info", status = "primary", solidHeader = TRUE,
+                  selectizeInput("Country",
+                                 label = "Destination Country",
+                                 choices = currencyVcountry$Country),
+                  h4("Currency"),
+                  verbatimTextOutput("Currency")
+                ),
+                box(
+                  title = "Vaccination Needed", status = "primary", solidHeader = TRUE,
+                  selectizeInput("country_vaccination",
+                                 label = "Country of Destination",
+                                 choices = vaccinationVcountry$country_vaccination),
+                  h4("Vaccination Required"),
+                  verbatimTextOutput("vaccination_required")
                 )
               ),
               fluidRow(
@@ -315,6 +317,7 @@ dashboardPage(
               )
       ),
       
+      
       # Weather tab
       tabItem(tabName = "weather",
               fluidRow(
@@ -370,7 +373,10 @@ dashboardPage(
                   conditionalPanel(
                     condition = "input.airport_question == 'busiest'",
                     tableOutput("busiest_table")          # NEW
-                  )
+                  ),
+
+                  plotOutput("airport_plot", height = 400),
+                  uiOutput("airport_analysis")
                 )
               )
       ),
@@ -402,7 +408,10 @@ dashboardPage(
                   conditionalPanel(
                     condition = "input.airline_question == 'most_flights'",
                     tableOutput("airline_table")                                # NEW
-                  )
+                  ),
+
+                  plotOutput("airline_plot", height = 400),
+                  uiOutput("airline_analysis")
                 )
               )
       ),
@@ -706,7 +715,7 @@ dashboardPage(
                         )
                         
               )
-              
+
       ),
       
       tabItem(tabName="about",
@@ -723,8 +732,54 @@ dashboardPage(
               )
               
 
+      ), 
+      
+      tabItem(tabName = "references",
+              fluidRow(
+                box(
+                  width = 12,
+                  title = "References",
+                  p("Domestic Airline Consumer Airfare Report | US Department of Transportation. (n.d.). Www.transportation.gov.",
+                    a("https://www.transportation.gov/policy/aviation-policy/domestic-airline-consumer-airfare-report",
+                      href = "https://www.transportation.gov/policy/aviation-policy/domestic-airline-consumer-airfare-report",
+                      target = "_blank")),
+                  br(),
+                  p("Download page. (2017). Bts.gov.",
+                    a("https://www.transtats.bts.gov/DL_SelectFields.aspx?gnoyr_VQ=FGK&QO_fu146_anzr=b0-gvzr",
+                      href = "https://www.transtats.bts.gov/DL_SelectFields.aspx?gnoyr_VQ=FGK&QO_fu146_anzr=b0-gvzr",
+                      target = "_blank")),
+                  br(),
+                  p("Furkan. (2025). Worldwide Travel Cities (Ratings and Climate). Kaggle.com.",
+                    a("https://www.kaggle.com/datasets/furkanima/worldwide-travel-cities-ratings-and-climate/data",
+                      href = "https://www.kaggle.com/datasets/furkanima/worldwide-travel-cities-ratings-and-climate/data",
+                      target = "_blank")),
+                  br(),
+                  p("ilyankou. (2025). passport-index-dataset. GitHub.",
+                    a("https://github.com/ilyankou/passport-index-dataset/blob/master/passport-index-matrix.csv",
+                      href = "https://github.com/ilyankou/passport-index-dataset/blob/master/passport-index-matrix.csv",
+                      target = "_blank")),
+                  br(),
+                  p("UNESCO. (2023). UNESCO World Heritage Centre - World Heritage List. Unesco.org.",
+                    a("https://whc.unesco.org/en/list/",
+                      href = "https://whc.unesco.org/en/list/",
+                      target = "_blank")),
+                  br(),
+                  p("Wikipedia Contributors. (2019, October 22). List of circulating currencies. Wikipedia.",
+                    a("https://en.wikipedia.org/wiki/List_of_circulating_currencies",
+                      href = "https://en.wikipedia.org/wiki/List_of_circulating_currencies",
+                      target = "_blank")),
+                  br(),
+                  p("World Cities Database | Simplemaps.com. (2019). Simplemaps.com.",
+                    a("https://simplemaps.com/data/world-cities",
+                      href = "https://simplemaps.com/data/world-cities",
+                      target = "_blank"))
+                )
+              )
       )
      
 )
 )
 )
+
+
+    
