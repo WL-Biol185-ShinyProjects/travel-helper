@@ -404,19 +404,52 @@ dashboardPage(
       ),
       tabItem(tabName="about",
               fluidRow(
-                box(title = "Our Mission", status = "primary", solidHeader = TRUE, width = 6,
-                    p("We all know planning a trip can be a hassle. Our mission is to help travelers, experienced and new, plan the perfect trip and reduce stress!")),
-                box(title = "The Team", status = "warning", solidHeader = TRUE, width = 6,
-                    tags$ul(
-                      tags$li(strong("Lily Caldwell:"), " W&L '27"),
-                      tags$li(strong("Mac Palmer:"), " W&L '27"),
-                      tags$li(strong("Maddie Montez:"), " W&L '27")
-                    )
-                    )
-              )
-              
-
-      ), 
+                box(
+                  width = 12, status = "primary", solidHeader = TRUE,
+                  title = "Our Mission",
+                  p(style = "font-size:16px; line-height:1.8;",
+                    "Travel Helper was built to make international travel planning simple, 
+       informed, and stress-free. We believe that access to clear, reliable 
+       travel information should be available to everyone — whether you're 
+       a first-time traveler or a seasoned explorer."
+                  )
+                )
+              ),
+              fluidRow(
+                box(
+                  width = 4, status = "info", solidHeader = TRUE,
+                  title = "Lily Caldwell '27",
+                  tags$img(
+                    src   = "IMG_0473.JPG",
+                    width = "100%",
+                    style = "border-radius: 8px; margin-bottom: 10px;"
+                  ),
+                  p("Lily is a Neuroscience Major. Her favorite vacation was travelling to Cape Coast, Ghana!"),
+                  p(style = "color:#999; font-size:12px;", "lcaldwell@mail.wlu.edu")
+                ),
+                box(
+                  width = 4, status = "info", solidHeader = TRUE,
+                  title = "Mac Palmer '27",
+                  tags$img(
+                    src   = "14CA98F3-1F2B-48A7-A1FE-09BB5E27DD4B.jpeg",
+                    width = "100%",
+                    style = "border-radius: 8px; margin-bottom: 10px;"
+                  ),
+                  p("Mac is an Integrated Engineering with Biology Major. His favorite vacation was going to Punta Cana, Dominican Republic!"),
+                  p(style = "color:#999; font-size:12px;", "mpalmer@mail.wlu.edu")
+                ),
+                box(
+                  width = 4, status = "info", solidHeader = TRUE,
+                  title = "Maddie Montez '27",
+                  tags$img(
+                    src   = "IMG_0464.JPG",
+                    width = "100%",
+                    style = "border-radius: 8px; margin-bottom: 10px;"
+                  ),
+                  p("Maddie is a Neuroscience Major. Her favorite vacation was visiting Barcelona, Spain!"),
+                  p(style = "color:#999; font-size:12px;", "mmontez@mail.wlu.edu")
+                )
+              ),
       
       #Travel quiz tab
       tabItem(tabName = "travel_quiz",
