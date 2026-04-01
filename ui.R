@@ -32,6 +32,9 @@ airfare_data <- read.csv("airfare_data.csv") %>%
     city2    = trimws(city2)
   )
 travel_quiz <- read.csv("Worldwide_Travel_Cities_Dataset.csv")
+lily.jpg <- "IMG_0473.JPG"
+mac.jpg <- "14CA98F3-1F2B-48A7-A1FE-09BB5E27DD4B.jpeg"
+maddie.jpg <- "IMG_0464.JPG"
 
 carrier_names <- c(
   "AA" = "American Airlines",   "AS" = "Alaska Airlines",
@@ -420,7 +423,7 @@ dashboardPage(
                   width = 4, status = "info", solidHeader = TRUE,
                   title = "Lily Caldwell '27",
                   tags$img(
-                    src   = "IMG_0473.JPG",
+                    src   = "lily.jpg",
                     width = "100%",
                     style = "border-radius: 8px; margin-bottom: 10px;"
                   ),
@@ -431,7 +434,7 @@ dashboardPage(
                   width = 4, status = "info", solidHeader = TRUE,
                   title = "Mac Palmer '27",
                   tags$img(
-                    src   = "14CA98F3-1F2B-48A7-A1FE-09BB5E27DD4B.jpeg",
+                    src   = "mac.jpg",
                     width = "100%",
                     style = "border-radius: 8px; margin-bottom: 10px;"
                   ),
@@ -442,13 +445,14 @@ dashboardPage(
                   width = 4, status = "info", solidHeader = TRUE,
                   title = "Maddie Montez '27",
                   tags$img(
-                    src   = "IMG_0464.JPG",
+                    src   = "maddie.jpg",
                     width = "100%",
                     style = "border-radius: 8px; margin-bottom: 10px;"
                   ),
                   p("Maddie is a Neuroscience Major. Her favorite vacation was visiting Barcelona, Spain!"),
                   p(style = "color:#999; font-size:12px;", "mmontez@mail.wlu.edu")
                 )
+              )
               ),
       
       #Travel quiz tab
