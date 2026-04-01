@@ -298,7 +298,8 @@ dashboardPage(
               fluidRow(
                 box(
                   width = 12,
-                  plotOutput("airport_plot", height = 400)
+                  plotOutput("airport_plot", height = 400),
+                  uiOutput("airport_analysis")
                 )
               )
       ),
@@ -322,7 +323,8 @@ dashboardPage(
               fluidRow(
                 box(
                   width = 12,
-                  plotOutput("airline_plot", height = 400)
+                  plotOutput("airline_plot", height = 400),
+                  uiOutput("airline_analysis")
                 )
               )
       ),
@@ -583,15 +585,4 @@ dashboardPage(
 )
 
     
-
-      
-    
-  
-
-
-
-
-
-
-# end dashboardPage
 
