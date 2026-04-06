@@ -10,13 +10,6 @@ library(shinyjs)
 
 
 # Data loading
-airports_busy <- read.csv("airports_busy.csv")
-passport_info <- read.csv("passport-index-tidy.csv")
-currencyVcountry <- read.csv("currencyVcountry.csv")
-passport_info      <- read.csv("passport-index-tidy.csv")
-currencyVcountry   <- read.csv("currencyVcountry.csv")
-vaccinationVcountry <- read.csv("vaccinationVcountry_correct.csv")
-adapter_data       <- read.csv("travel_adapter_converter.csv")
 passport_info <- read.csv("passport-index-tidy.csv")
 currencyVcountry <- read.csv("currencyVcountry.csv")
 vaccinationVcountry <- read.csv("vaccinationVcountry_correct.csv")
@@ -374,8 +367,6 @@ dashboardPage(
                     condition = "input.airport_question == 'busiest'",
                     tableOutput("busiest_table")          # NEW
                   ),
-
-                  plotOutput("airport_plot", height = 400),
                   uiOutput("airport_analysis")
                 )
               )
@@ -409,8 +400,6 @@ dashboardPage(
                     condition = "input.airline_question == 'most_flights'",
                     tableOutput("airline_table")                                # NEW
                   ),
-
-                  plotOutput("airline_plot", height = 400),
                   uiOutput("airline_analysis")
                 )
               )

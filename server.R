@@ -865,7 +865,21 @@ function(input, output, session) {
       )
     }
   })
+  output$busiest_table <- renderTable({
+    final_flights %>%
+      group_by(Airport = ORIGIN_CITY_NAME) %>%
+      summarise(`Total Flights` = n()) %>%
+      arrange(desc(`Total Flights`)) %>%
+      slice_head(n = 10)
+  })
   
+  output$airline_table <- renderTable({
+    final_flights %>%
+      group_by(Airline = MKT_UNIQUE_CARRIER) %>%
+      summarise(`Total Flights` = n()) %>%
+      arrange(desc(`Total Flights`)) %>%
+      slice_head(n = 10)
+  })
   
   output$busiest_days_plot <- renderPlot({
     
