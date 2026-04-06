@@ -10,6 +10,13 @@ library(shinyjs)
 
 
 # Data loading
+airports_busy <- read.csv("airports_busy.csv")
+passport_info <- read.csv("passport-index-tidy.csv")
+currencyVcountry <- read.csv("currencyVcountry.csv")
+passport_info      <- read.csv("passport-index-tidy.csv")
+currencyVcountry   <- read.csv("currencyVcountry.csv")
+vaccinationVcountry <- read.csv("vaccinationVcountry_correct.csv")
+adapter_data       <- read.csv("travel_adapter_converter.csv")
 passport_info <- read.csv("passport-index-tidy.csv")
 currencyVcountry <- read.csv("currencyVcountry.csv")
 vaccinationVcountry <- read.csv("vaccinationVcountry_correct.csv")
@@ -134,10 +141,9 @@ dashboardPage(
       menuItem("Airlines",             tabName = "airlines"),
       menuItem("Pricing and Statistics",              tabName = "pricing"),
       menuItem("Travel Suggestions",   tabName = "travel_suggestions"),
-
-      menuItem("About Us", tabName="about"),
-
-      menuItem("Where Should I Go?",         tabName = "travel_quiz")
+      menuItem("Where Should I Go?",         tabName = "travel_quiz"),
+      menuItem("About Us", tabName="about"), 
+      menuItem("References", tabName="references")
 
     )
   ),
@@ -214,7 +220,6 @@ dashboardPage(
                   h4("Requirement"),
                   verbatimTextOutput("Requirement")
                 ),
-               
                 box(
                   title = "Electrical Adapter & Converter Requirements", status = "primary", solidHeader = TRUE,
                   selectizeInput("origin_country",
@@ -252,6 +257,24 @@ dashboardPage(
                     h4("Vaccination Required"),
                     verbatimTextOutput("vaccination_required")
                   )
+              ),
+              fluidRow(
+                box(
+                  title = "Currency Info", status = "primary", solidHeader = TRUE,
+                  selectizeInput("Country",
+                                 label = "Destination Country",
+                                 choices = currencyVcountry$Country),
+                  h4("Currency"),
+                  verbatimTextOutput("Currency")
+                ),
+                box(
+                  title = "Vaccination Needed", status = "primary", solidHeader = TRUE,
+                  selectizeInput("country_vaccination",
+                                 label = "Country of Destination",
+                                 choices = vaccinationVcountry$country_vaccination),
+                  h4("Vaccination Required"),
+                  verbatimTextOutput("vaccination_required")
+                )
               ),
               fluidRow(
                 box(
@@ -311,6 +334,7 @@ dashboardPage(
               )
       ),
       
+      
       # Weather tab
       tabItem(tabName = "weather",
               fluidRow(
@@ -348,7 +372,8 @@ dashboardPage(
                     label = "What would you like to explore?",
                     choices = c(
                       "What is the Best Airport to Fly into?" = "on_time",
-                      "Which airport had the most cancellations in 2025?" = "cancellations"
+                      "Which airport had the most cancellations in 2025?" = "cancellations",
+                      "What are the top 10 busiest airports in the U.S.?" = "busiest"   # NEW
                     ),
                     options = list(placeholder = "Select a question...")
                   )
@@ -357,7 +382,18 @@ dashboardPage(
               fluidRow(
                 box(
                   width = 12,
-                  plotOutput("airport_plot", height = 400)
+                  # Switches between plot and table depending on selection
+                  conditionalPanel(
+                    condition = "input.airport_question != 'busiest'",
+                    plotOutput("airport_plot", height = 400)
+                  ),
+                  conditionalPanel(
+                    condition = "input.airport_question == 'busiest'",
+                    tableOutput("busiest_table")          # NEW
+                  ),
+
+                  plotOutput("airport_plot", height = 400),
+                  uiOutput("airport_analysis")
                 )
               )
       ),
@@ -372,7 +408,8 @@ dashboardPage(
                     label = "What would you like to explore?",
                     choices = c(
                       "Which airlines delay flights the most?" = "delays",
-                      "Which airlines cancel flights the most?" = "cancellations"
+                      "Which airlines cancel flights the most?" = "cancellations",
+                      "Which airlines have the most flights?" = "most_flights"  # NEW
                     ),
                     options = list(placeholder = "Select a question...")
                   )
@@ -381,7 +418,17 @@ dashboardPage(
               fluidRow(
                 box(
                   width = 12,
-                  plotOutput("airline_plot", height = 400)
+                  conditionalPanel(
+                    condition = "input.airline_question != 'most_flights'",
+                    plotOutput("airline_plot", height = 400)
+                  ),
+                  conditionalPanel(
+                    condition = "input.airline_question == 'most_flights'",
+                    tableOutput("airline_table")                                # NEW
+                  ),
+
+                  plotOutput("airline_plot", height = 400),
+                  uiOutput("airline_analysis")
                 )
               )
       ),
@@ -477,6 +524,7 @@ dashboardPage(
               )
 
       ),
+
       tabItem(tabName="about",
               fluidRow(
                 box(
@@ -526,8 +574,7 @@ dashboardPage(
                 )
               )
               ),
-      
-      #Travel quiz tab
+
       tabItem(tabName = "travel_quiz",
               fluidPage(tags$head(tags$style(HTML("
     :root {
@@ -612,95 +659,144 @@ dashboardPage(
     .nav-tabs > li.active > a{ color: var(--coral);
                                 border-bottom: 3px solid var(--coral); }
   "))),
-                       
-                       # ── Header ────────────────────────────────────────────────────────────────
-                       div(class = "app-header",
-                           h1("✈️ Travel Destination Quiz"),
-                           p("Tell us what you're after and we'll match you with your perfect city.")
-                       ),
-                       
-                       fluidRow(
-                         
-                         # ── LEFT: inputs ─────────────────────────────────────────────────────────
-                         column(4,
-                                
-                                # Region
-                                div(class = "quiz-card",
-                                    h4("🌍 Preferred region"),
-                                    selectInput("region", label = NULL,
-                                                choices = c("No preference",
-                                                            "Africa", "Asia", "Europe", "Middle East",
-                                                            "North America", "Oceania", "South America"),
-                                                selected = "No preference")
-                                ),
-                                
-                                # Temperature
-                                div(class = "quiz-card",
-                                    h4("🌡️ Preferred temperature (°C)"),
-                                    sliderInput("temp_range", label = NULL,
-                                                min = -5, max = 35, value = c(15, 28), step = 1, post = "°C"),
-                                    checkboxInput("temp_any", "I don't mind the temperature", value = FALSE)
-                                ),
-                                
-                                # Trip length
-                                div(class = "quiz-card",
-                                    h4("🗓️ Ideal trip length"),
-                                    selectInput("duration", label = NULL,
-                                                choices  = c("No preference", "Weekend", "Short trip",
-                                                             "One week", "Long trip"),
-                                                selected = "No preference")
-                                ),
-                                
-                                # Budget
-                                div(class = "quiz-card",
-                                    h4("💰 Budget level"),
-                                    radioButtons("budget", label = NULL,
-                                                 choices  = c("No preference", "Budget", "Mid-range", "Luxury"),
+                        
+                        # ── Header ────────────────────────────────────────────────────────────────
+                        div(class = "app-header",
+                            h1("✈️ Travel Destination Quiz"),
+                            p("Tell us what you're after and we'll match you with your perfect city.")
+                        ),
+                        
+                        fluidRow(
+                          
+                          # ── LEFT: inputs ─────────────────────────────────────────────────────────
+                          column(4,
+                                 
+                                 # Region
+                                 div(class = "quiz-card",
+                                     h4("🌍 Preferred region"),
+                                     selectInput("region", label = NULL,
+                                                 choices = c("No preference",
+                                                             "Africa", "Asia", "Europe", "Middle East",
+                                                             "North America", "Oceania", "South America"),
                                                  selected = "No preference")
-                                ),
-                                
-                                # Vibe sliders
-                                div(class = "quiz-card",
-                                    h4("🎛️ What matters most to you?"),
-                                    p(style = "color:#666; font-size:.87rem; margin-bottom:14px;",
-                                      "1 = not important → 5 = must-have"),
-                                    sliderInput("vibe_culture",   "🎭 Culture",    1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
-                                    sliderInput("vibe_adventure", "🧗 Adventure",  1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
-                                    sliderInput("vibe_nature",    "🌿 Nature",     1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
-                                    sliderInput("vibe_beaches",   "🏖️ Beaches",   1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
-                                    sliderInput("vibe_nightlife", "🎉 Nightlife",  1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
-                                    sliderInput("vibe_cuisine",   "🍽️ Cuisine",   1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
-                                    sliderInput("vibe_wellness",  "🧘 Wellness",   1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
-                                    sliderInput("vibe_urban",     "🏙️ Urban",     1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
-                                    sliderInput("vibe_seclusion", "🌄 Seclusion",  1, 5, 3, step = 1, ticks = TRUE, width = "100%")
-                                ),
-                                
-                                actionButton("go_btn", "Find My Destinations 🚀")
-                         ),
-                         
-                         # ── RIGHT: results ────────────────────────────────────────────────────────
-                         column(8,
-                                uiOutput("results_panel")
-                         )
-                       )
-                
+                                 ),
+                                 
+                                 # Temperature
+                                 div(class = "quiz-card",
+                                     h4("🌡️ Preferred temperature (°C)"),
+                                     sliderInput("temp_range", label = NULL,
+                                                 min = -5, max = 35, value = c(15, 28), step = 1, post = "°C"),
+                                     checkboxInput("temp_any", "I don't mind the temperature", value = FALSE)
+                                 ),
+                                 
+                                 # Trip length
+                                 div(class = "quiz-card",
+                                     h4("🗓️ Ideal trip length"),
+                                     selectInput("duration", label = NULL,
+                                                 choices  = c("No preference", "Weekend", "Short trip",
+                                                              "One week", "Long trip"),
+                                                 selected = "No preference")
+                                 ),
+                                 
+                                 # Budget
+                                 div(class = "quiz-card",
+                                     h4("💰 Budget level"),
+                                     radioButtons("budget", label = NULL,
+                                                  choices  = c("No preference", "Budget", "Mid-range", "Luxury"),
+                                                  selected = "No preference")
+                                 ),
+                                 
+                                 # Vibe sliders
+                                 div(class = "quiz-card",
+                                     h4("🎛️ What matters most to you?"),
+                                     p(style = "color:#666; font-size:.87rem; margin-bottom:14px;",
+                                       "1 = not important → 5 = must-have"),
+                                     sliderInput("vibe_culture",   "🎭 Culture",    1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
+                                     sliderInput("vibe_adventure", "🧗 Adventure",  1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
+                                     sliderInput("vibe_nature",    "🌿 Nature",     1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
+                                     sliderInput("vibe_beaches",   "🏖️ Beaches",   1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
+                                     sliderInput("vibe_nightlife", "🎉 Nightlife",  1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
+                                     sliderInput("vibe_cuisine",   "🍽️ Cuisine",   1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
+                                     sliderInput("vibe_wellness",  "🧘 Wellness",   1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
+                                     sliderInput("vibe_urban",     "🏙️ Urban",     1, 5, 3, step = 1, ticks = TRUE, width = "100%"),
+                                     sliderInput("vibe_seclusion", "🌄 Seclusion",  1, 5, 3, step = 1, ticks = TRUE, width = "100%")
+                                 ),
+                                 
+                                 actionButton("go_btn", "Find My Destinations 🚀")
+                          ),
+                          
+                          # ── RIGHT: results ────────────────────────────────────────────────────────
+                          column(8,
+                                 uiOutput("results_panel")
+                          )
+                        )
+                        
               )
 
-  )
-)
-)
-)
-
-    
-
+      ),
       
+      tabItem(tabName="about",
+              fluidRow(
+                box(title = "Our Mission", status = "primary", solidHeader = TRUE, width = 6,
+                    p("We all know planning a trip can be a hassle. Our mission is to help travelers, experienced and new, plan the perfect trip and reduce stress!")),
+                box(title = "The Team", status = "warning", solidHeader = TRUE, width = 6,
+                    tags$ul(
+                      tags$li(strong("Lily Caldwell:"), " W&L '27"),
+                      tags$li(strong("Mac Palmer:"), " W&L '27"),
+                      tags$li(strong("Maddie Montez:"), " W&L '27")
+                    )
+                    )
+              )
+              
+
+      ), 
+      
+      tabItem(tabName = "references",
+              fluidRow(
+                box(
+                  width = 12,
+                  title = "References",
+                  p("Domestic Airline Consumer Airfare Report | US Department of Transportation. (n.d.). Www.transportation.gov.",
+                    a("https://www.transportation.gov/policy/aviation-policy/domestic-airline-consumer-airfare-report",
+                      href = "https://www.transportation.gov/policy/aviation-policy/domestic-airline-consumer-airfare-report",
+                      target = "_blank")),
+                  br(),
+                  p("Download page. (2017). Bts.gov.",
+                    a("https://www.transtats.bts.gov/DL_SelectFields.aspx?gnoyr_VQ=FGK&QO_fu146_anzr=b0-gvzr",
+                      href = "https://www.transtats.bts.gov/DL_SelectFields.aspx?gnoyr_VQ=FGK&QO_fu146_anzr=b0-gvzr",
+                      target = "_blank")),
+                  br(),
+                  p("Furkan. (2025). Worldwide Travel Cities (Ratings and Climate). Kaggle.com.",
+                    a("https://www.kaggle.com/datasets/furkanima/worldwide-travel-cities-ratings-and-climate/data",
+                      href = "https://www.kaggle.com/datasets/furkanima/worldwide-travel-cities-ratings-and-climate/data",
+                      target = "_blank")),
+                  br(),
+                  p("ilyankou. (2025). passport-index-dataset. GitHub.",
+                    a("https://github.com/ilyankou/passport-index-dataset/blob/master/passport-index-matrix.csv",
+                      href = "https://github.com/ilyankou/passport-index-dataset/blob/master/passport-index-matrix.csv",
+                      target = "_blank")),
+                  br(),
+                  p("UNESCO. (2023). UNESCO World Heritage Centre - World Heritage List. Unesco.org.",
+                    a("https://whc.unesco.org/en/list/",
+                      href = "https://whc.unesco.org/en/list/",
+                      target = "_blank")),
+                  br(),
+                  p("Wikipedia Contributors. (2019, October 22). List of circulating currencies. Wikipedia.",
+                    a("https://en.wikipedia.org/wiki/List_of_circulating_currencies",
+                      href = "https://en.wikipedia.org/wiki/List_of_circulating_currencies",
+                      target = "_blank")),
+                  br(),
+                  p("World Cities Database | Simplemaps.com. (2019). Simplemaps.com.",
+                    a("https://simplemaps.com/data/world-cities",
+                      href = "https://simplemaps.com/data/world-cities",
+                      target = "_blank"))
+                )
+              )
+      )
+     
+)
+)
+)
+
+
     
-  
-
-
-
-
-
-
-# end dashboardPage
-

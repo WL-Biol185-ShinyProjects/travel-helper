@@ -1,3 +1,4 @@
+
 library(shiny)
 library(shinydashboard)
 library(ggplot2)
@@ -113,9 +114,9 @@ final_flights <- final_flights %>%
 
 # Convert to POSIXct (today's date + time)
 #numeric_to_time <- function(x) {
- # hours   <- x %/% 100
- # minutes <- x %%  100
- # as.POSIXct(sprintf("%02d:%02d", hours, minutes), format = "%H:%M")
+# hours   <- x %/% 100
+# minutes <- x %%  100
+# as.POSIXct(sprintf("%02d:%02d", hours, minutes), format = "%H:%M")
 #}
 #dep_times <- numeric_to_time(final_flights$CRS_DEP_TIME)
 #del_times <- numeric_to_time(final_flights$DEP_TIME)
@@ -282,7 +283,7 @@ function(input, output, session) {
           title = "Airports Ranked by On-Time Arrival Percentage",
           subtitle = "% of flights arriving on time · Dashed line = overall average",
           x = NULL, y = NULL,
-          caption = "Source: arrival_2025 dataset"
+          caption = "Source: United States Department of Transportation"
         ) +
         theme_minimal(base_size = 13) +
         theme(
@@ -330,7 +331,7 @@ function(input, output, session) {
           title = "Which Airports Have the Most Cancellations?",
           subtitle = "Top 20 airports by cancellation rate · Dashed line = overall average",
           x = NULL, y = NULL,
-          caption = "Source: final_flights dataset"
+          caption = "Source: United States Department of Transportation"
         ) +
         theme_minimal(base_size = 13) +
         theme(
@@ -344,6 +345,43 @@ function(input, output, session) {
     }
   })
   
+  output$airport_analysis <- renderUI({
+    if (input$airport_question == "on_time") {
+      tagList(
+        tags$p(
+          "Airports vary considerably in their on-time arrival performance. Those above the average
+        line demonstrate stronger operational efficiency. In particular, Salt Lake City (SLC), Minneapolis/St. Paul (MSP), and Los Angeles
+          maintain high on-time arrival rates primarily due to their status as major hubs for Delta Air Lines, which operates efficiently and delays flights a relatively low amount which can be seen in other visualations under the airlines tab.
+          SLC and MSP, in particular, are recognized for efficient operations and effective weather management, ensuring top-tier reliability. 
+          The top 3 airport have undergone recent rennovations aiding in their efficieny. The Los Angeles aiport is currently undergoing 
+          rennovations in preparation for the 2028 Summer Olympics.",
+          style = "margin-top: 14px; color: #444; font-size: 13px; line-height: 1.7;"
+        ),
+        tags$p(
+          "Note that on-time performance can shift seasonally. Airports in northern climates 
+        tend to underperform in winter months while recovering strongly in summer. Only airports with 30 or more flights are included to ensure statistical reliability.",
+          style = "color: #666; font-size: 12px; font-style: italic; margin-top: 6px;"
+        )
+      )
+      
+    } else if (input$airport_question == "cancellations") {
+      tagList(
+        tags$p(
+          "The airports with the highest cancellation rates tend to be major hubs or those 
+        located in regions prone to severe weather events, for example Adak Island, Alaska and Aspen, CO. Even small increases in cancellation 
+        rate can have an outsized impact on passengers, particularly at high-volume airports 
+        where thousands of flights operate daily.",
+          style = "margin-top: 14px; color: #444; font-size: 13px; line-height: 1.7;"
+        ),
+        tags$p(
+          "Airports near the average line are worth monitoring. A modest operational disruption 
+        could push them into the high-cancellation tier. Only airports with 30 or more flights 
+        are included to ensure statistical reliability.",
+          style = "color: #666; font-size: 12px; font-style: italic; margin-top: 6px;"
+        )
+      )
+    }
+  })
   
   # UNESCO coords
   unesco_coords <- read_excel("UNESCO_COORDS.xlsx")
@@ -571,7 +609,7 @@ function(input, output, session) {
       ),
       br(),
       p(paste("Distance:", df$nsmiles, "miles  |  Passengers:", df$passengers,
-              " |  Data from: Q", df$quarter, df$Year))
+              " |  Data from: United States Department of Transportation"))
     )
   })
   
@@ -730,7 +768,7 @@ function(input, output, session) {
           title = "Which Airlines Delay Flights the Most?",
           subtitle = "% of flights delayed more than 15 minutes · Dashed line = overall average",
           x = NULL, y = NULL,
-          caption = "Source: final_flights dataset"
+          caption = "Source: United States Department of Transportation"
         ) +
         theme_minimal(base_size = 13) +
         theme(
@@ -776,7 +814,7 @@ function(input, output, session) {
           title = "Which Airlines Cancel Flights the Most?",
           subtitle = "% of flights cancelled · Dashed line = overall average",
           x = NULL, y = NULL,
-          caption = "Source: final_flights dataset"
+          caption = "Source: United States Department of Transportation"
         ) +
         theme_minimal(base_size = 13) +
         theme(
@@ -787,6 +825,44 @@ function(input, output, session) {
           legend.position    = "none",
           plot.caption       = element_text(color = "#aaaaaa", size = 9)
         )
+    }
+  })
+  
+  output$airline_analysis <- renderUI({
+    if (input$airline_question == "delays") {
+      tagList(
+        tags$p(
+          "Delay rates differ meaningfully across carriers, reflecting differences in fleet size, 
+        route networks, and operational practices. The Airlines with the most delays, like Fronteir, JetBLue, Southwest, and Allegient, are Frontier, JetBlue, Southwest, and Allegiant 
+          frequently experience high delay rates due to a combination of high-density schedules, fast turnaround times, and vulnerability to network-wide disruptions. These budget and 
+          hybrid carriers are often plagued by domino effect delays where late aircraft arrivals trigger further scheduling issues.",
+          style = "margin-top: 14px; color: #444; font-size: 13px; line-height: 1.7;"
+        ),
+        tags$p(
+          "Delays are defined here as departures more than 15 minutes late. Only carriers with 
+        30 or more flights are included to ensure reliability. Delay rates can spike during 
+        peak travel seasons or periods of severe weather.",
+          style = "color: #666; font-size: 12px; font-style: italic; margin-top: 6px;"
+        )
+      )
+      
+    } else if (input$airline_question == "cancellations") {
+      tagList(
+        tags$p(
+          "Cancellation rates across airlines reveal which carriers struggle most to maintain 
+          their scheduled service. American airlines had the highest cancellation rate due to its massive, 
+          complex hub-and-spoke network concentrated in storm-prone regions (like Charlotte and Dallas).
+          Regional severe weather, staffing shortages, and technical issues trigger cascading delays that force higher cancellations. 
+          Due to the complexity of their network, a disruption in one hub can cause a cascade of delays and cancellations across the entire system.",
+          style = "margin-top: 14px; color: #444; font-size: 13px; line-height: 1.7;"
+        ),
+        tags$p(
+          "Only carriers with 30 or more flights are included. Cancellation figures reflect 
+        the full dataset period — individual months or seasons may show more dramatic variation 
+        than the overall average suggests.",
+          style = "color: #666; font-size: 12px; font-style: italic; margin-top: 6px;"
+        )
+      )
     }
   })
   
@@ -816,7 +892,7 @@ function(input, output, session) {
         title = "Top 10 Busiest Travel Days of 2025",
         subtitle = "Days with the highest number of flights",
         x = NULL, y = NULL,
-        caption = "Source: final_flights dataset"
+        caption = "Source: United States Department of Transportation"
       ) +
       theme_minimal(base_size = 13) +
       theme(
@@ -829,7 +905,7 @@ function(input, output, session) {
       )
   })
   
-
+  
   output$packing_list_output <- renderUI({
     req(packing_list_data())
     d <- packing_list_data()
@@ -1083,7 +1159,7 @@ function(input, output, session) {
         title = "Which Airports Have the Most Cancellations?",
         subtitle = "Top 20 airports by cancellation rate · Dashed line = overall average",
         x = NULL, y = NULL,
-        caption = "Source: final_flights dataset"
+        caption = "Source: United States Department of Transportation"
       ) +
       theme_minimal(base_size = 13) +
       theme(
@@ -1096,7 +1172,7 @@ function(input, output, session) {
       )
   })
   
-
+  
   #travel quiz server
   # Disable temp slider when "any" is checked
   observe({
