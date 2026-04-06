@@ -251,24 +251,7 @@ dashboardPage(
                     verbatimTextOutput("vaccination_required")
                   )
               ),
-              fluidRow(
-                box(
-                  title = "Currency Info", status = "primary", solidHeader = TRUE,
-                  selectizeInput("Country",
-                                 label = "Destination Country",
-                                 choices = currencyVcountry$Country),
-                  h4("Currency"),
-                  verbatimTextOutput("Currency")
-                ),
-                box(
-                  title = "Vaccination Needed", status = "primary", solidHeader = TRUE,
-                  selectizeInput("country_vaccination",
-                                 label = "Country of Destination",
-                                 choices = vaccinationVcountry$country_vaccination),
-                  h4("Vaccination Required"),
-                  verbatimTextOutput("vaccination_required")
-                )
-              ),
+          
               fluidRow(
                 box(
                   title = "🛡️ U.S. Travel Advisory", status = "danger", solidHeader = TRUE,
